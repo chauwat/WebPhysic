@@ -25,19 +25,21 @@
 		<script type="module">
 
 			import * as THREE from './build/three.module.js';
-
 			import { OrbitControls } from './jsm/controls/OrbitControls.js';
+			import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+			const loader = new GLTFLoader();
 
 			let camera, controls, scene, renderer;
+			var meshes = [];
 
 			init();
-			//render(); // remove when using next line for animation loop (requestAnimationFrame)
+			// render(); // remove when using next line for animation loop (requestAnimationFrame)
 			animate();
 
-			function init() {
 
+			function init() {
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0xcccccc );
+				scene.background = new THREE.Color( 0xccccc0 );
 				scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -51,7 +53,7 @@
 				// controls
 
 				controls = new OrbitControls( camera, renderer.domElement );
-				controls.listenToKeyEvents( window ); // optional
+				// controls.listenToKeyEvents( window ); // optional
 
 				//controls.addEventListener( 'change', render ); // call this only in static scenes (i.e., if there is no animation loop)
 
@@ -70,6 +72,8 @@
 				const geometry = new THREE.CylinderGeometry( 0, 10, 30, 4, 1 );
 				const material = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true } );
 
+				const plane = new THREE.BoxGeometry(50, 50, 2);
+
 				for ( let i = 0; i < 500; i ++ ) {
 
 					const mesh = new THREE.Mesh( geometry, material );
@@ -79,8 +83,28 @@
 					mesh.updateMatrix();
 					mesh.matrixAutoUpdate = false;
 					scene.add( mesh );
+					meshes.push(mesh);
 
+					const plane_mesh = new THREE.Mesh( plane, material );
+					plane_mesh.position.x = mesh.position.x;
+					plane_mesh.position.y = mesh.position.y - 15;
+					plane_mesh.position.z = mesh.position.z;
+					plane_mesh.rotation.x = -(Math.PI / 2);
+					scene.add( plane_mesh );
 				}
+
+				loader.load( './car.glb', function ( _data ) {
+					let container = new THREE.Object3D()
+					container.add(_data.scene);
+					// let mesh = _data.scene;
+					container.scale.x = 30;
+					container.scale.y = 30;
+					container.scale.z = 30;
+					container.rotation.x = -(Math.PI / 2);
+					scene.add( container );
+				}, undefined, function ( error ) {
+					console.error( error );
+				} );
 
 				// lights
 
@@ -110,17 +134,27 @@
 
 			}
 
-			function animate() {
+			function animate(millis) {
 
 				requestAnimationFrame( animate );
 
 				controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
 
-				render();
+				render(millis);
 
 			}
 
-			function render() {
+			function render(millis) {
+				if (parseInt(millis * 10000) % 9) {
+					for (let i = 0; i < 100; i++) {
+						meshes[i].position.y += (Math.random() - 0.5) * 5;
+						meshes[i].updateMatrix();
+						if (millis > 3 * 1000) {
+							scene.remove(meshes[i])
+						}
+					}
+				}
+				
 
 				renderer.render( scene, camera );
 
