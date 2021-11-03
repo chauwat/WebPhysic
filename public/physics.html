@@ -35,7 +35,10 @@
         var time = 0;
         var keysActions = {
             "ArrowUp": 'acceleration',
-            "ArrowDown": "braking"
+            "ArrowDown": "braking",
+            "ArrowLeft": "left",
+            "ArrowRight": "right"
+            
         };
 
         // Ammojs Initialization
@@ -198,7 +201,7 @@
             //Ammojs Section
             let transform = new Ammo.btTransform();
             transform.setIdentity();
-            transform.setOrigin(new Ammo.btVector3(pos.x + 1, pos.y + 3.2, pos.z + 1));
+            transform.setOrigin(new Ammo.btVector3(pos.x , pos.y, pos.z));
             transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
             let motionState = new Ammo.btDefaultMotionState(transform);
 
@@ -470,7 +473,7 @@
                 for (var i = 0; i < nh; i++)
                     createBox(new THREE.Vector3(size * j - (size * (nw - 1)) / 2, size * i, 10), ZERO_QUATERNION, size, size, size, 10);
 
-            createVehicle(new THREE.Vector3(0, 20, -20), ZERO_QUATERNION);
+            createVehicle(new THREE.Vector3(0, 0, -20), ZERO_QUATERNION);
         }
 
 
