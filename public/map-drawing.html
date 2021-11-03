@@ -1,0 +1,115 @@
+<html>
+
+<head>
+    <style>
+        .container {
+            /* border: 1px dashed #CCCCCC; */
+            padding: 8px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            background-color: transparent;
+            border: 1px dashed #ACC;
+        }
+    </style>
+</head>
+
+<body onload="main()">
+    <div class="container">
+        <svg width="720" height="480" viewBox="0 0 720 480" xmlns="http://www.w3.org/2000/svg" id="paper">
+        </svg>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.0/anime.min.js"></script>
+    <script lang="js">
+        var paper, paperViewBoxWidth;
+        var isMouseDown = false;
+        var prevPoint = {};
+        var lineCount = -1;
+        var lineData = [];
+
+        function main() {
+            paper = document.getElementById('paper');
+            paperViewBoxWidth = paper.getAttribute('width');
+            paper.addEventListener('mousedown', onMouseDown);
+            paper.addEventListener('mouseup', onMouseUp);
+            paper.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('keydown', onKeyDown);
+        }
+
+        function genSvgNode(n, v) {
+            n = document.createElementNS("http://www.w3.org/2000/svg", n);
+            for (var p in v) n.setAttributeNS(null, p, v[p]);
+            return n;
+        }
+
+        function drawLine({ x, y }, isNew = false) {
+            let lineId = `line-${isNew ? ++lineCount : lineCount}`;
+            if (isNew) {
+                // const newLine = genSvgNode('circle', { cx: x, cy: y, r: 1 });
+                const newLine = genSvgNode('path', {
+                    id: lineId,
+                    stroke: 'green',
+                    'stroke-width': 2,
+                    fill: 'none',
+                    d: `M${x} ${y}`,
+                });
+                paper.appendChild(newLine);
+                lineData.push([{ x, y }]);
+            } else {
+                let line = document.getElementById(lineId);
+                let d = line.getAttribute('d');
+                line.setAttribute('d', d + `L${x} ${y}`);
+                lineData[lineData.length - 1].push({ x, y });
+            }
+        }
+
+        function removeLine(lineId) {
+            let line = document.getElementById(lineId);
+            if (line) line.parentNode.removeChild(line);
+        }
+
+        function mapPoint({ x, y }) {
+            let paperRect = paper.getBoundingClientRect();
+            let scale = paperRect.width / paperViewBoxWidth;
+            x = Math.ceil((x - paperRect.x) / scale);
+            y = Math.ceil((y - paperRect.y) / scale);
+            return { x, y };
+        }
+
+        function updateLine(x, y) {
+            if ((Math.abs(x - prevPoint.x) + Math.abs(y - prevPoint.y)) <= 10) return;
+            drawLine(mapPoint({ x, y }), !prevPoint.x);
+            prevPoint = { x, y };
+        }
+
+        // ===============================================> USER INPUT
+
+        function onMouseDown() {
+            isMouseDown = true;
+        }
+
+        function onMouseUp() {
+            isMouseDown = false;
+            prevPoint = {};
+        }
+
+        function onMouseMove(ev) {
+            if (isMouseDown) {
+                updateLine(ev.clientX, ev.clientY);
+            }
+        }
+
+        function onKeyDown(e) {
+            // Ctrl-Z, Undo, Remove Line
+            if (e.keyCode == 90 && e.ctrlKey && lineCount >= 0) {
+                removeLine(`line-${lineCount--}`);
+                lineData.pop();
+            }
+        }
+    </script>
+</body>
+
+</html>
