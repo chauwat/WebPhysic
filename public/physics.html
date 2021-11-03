@@ -60,7 +60,7 @@
 
             //create camera
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.2, 2000);
-            camera.position.set(0, 0, 100);
+            camera.position.set(80, 80, 80);
             camera.lookAt(new THREE.Vector3(0, 0, 0));
 
             //Add hemisphere light
@@ -130,7 +130,7 @@
                 return false;
             }
         }
-        
+
         function keydown(e) {
             if (keysActions[e.code]) {
                 actions[keysActions[e.code]] = true;
@@ -155,7 +155,7 @@
             let pos = { x: 0, y: 20, z: 0 };
             let radius = 1;
             let quat = { x: 0, y: 0, z: 0, w: 1 };
-            let mass = 0;
+            let mass = 1;
 
             const car = new THREE.Group();
             const backWheel = new THREE.Mesh(
@@ -209,14 +209,27 @@
             let rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, colShape, localInertia);
             let body = new Ammo.btRigidBody(rbInfo);
             physicsWorld.addRigidBody(body);
-            car.userData.physicsBody = body;
-            rigidBodies.push(car);
+
+            if (mass > 0) {
+                function sync(dt) {
+                    console.log(1);
+                    var ms = body.getMotionState();
+                    if (ms) {
+                        ms.getWorldTransform(tmpTrans);
+                        var p = tmpTrans.getOrigin();
+                        var q = tmpTrans.getRotation();
+                        car.position.set(p.x(), p.y(), p.z());
+                        car.quaternion.set(q.x(), q.y(), q.z(), q.w());
+                    }
+                }
+                syncList.push(sync);
+            }
         }
 
         function createBox(pos, quat, w, l, h, mass, friction) {
             var material = mass > 0 ? materialDynamic : materialStatic;
             var shape = new THREE.BoxGeometry(w, l, h);
-            var geometry = new Ammo.btBoxShape(new Ammo.btVector3(w*0.5 , l * 0.5, h * 0.5));
+            var geometry = new Ammo.btBoxShape(new Ammo.btVector3(w * 0.5, l * 0.5, h * 0.5));
 
             if (!mass) mass = 0;
             if (!friction) friction = 1;
@@ -245,7 +258,7 @@
             physicsWorld.addRigidBody(body);
 
             if (mass > 0) {
-                body.setActivationState(DISABLE_DEACTIVATION);
+                // body.setActivationState(DISABLE_DEACTIVATION);
                 // Sync physics and graphics
                 function sync(dt) {
                     var ms = body.getMotionState();
@@ -430,7 +443,7 @@
             var t = new THREE.CylinderGeometry(radius, radius, width, 24, 1);
             t.rotateZ(Math.PI / 2);
             var mesh = new THREE.Mesh(t, materialInteractive);
-            mesh.add(new THREE.Mesh(new THREE.BoxGeometry(width * 1.5, radius * 1.75, radius*.25, 1, 1, 1), materialInteractive));
+            mesh.add(new THREE.Mesh(new THREE.BoxGeometry(width * 1.5, radius * 1.75, radius * .25, 1, 1, 1), materialInteractive));
             scene.add(mesh);
             return mesh;
         }
@@ -455,10 +468,10 @@
                 for (var i = 0; i < nh; i++)
                     createBox(new THREE.Vector3(size * j - (size * (nw - 1)) / 2, size * i, 10), ZERO_QUATERNION, size, size, size, 10);
 
-            createVehicle(new THREE.Vector3(0, 4, -20), ZERO_QUATERNION);
+            createVehicle(new THREE.Vector3(0, 20, -20), ZERO_QUATERNION);
         }
-        
-        
+
+
         function start() {
             tmpTrans = new Ammo.btTransform();
             setupPhysicsWorld();
