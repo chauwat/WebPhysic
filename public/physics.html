@@ -153,7 +153,9 @@
 
         function createCar() {
             let pos = { x: 0, y: 20, z: 0 };
-            let radius = 1;
+            let w = 10;
+            let l = 3;
+            let h = 5;
             let quat = { x: 0, y: 0, z: 0, w: 1 };
             let mass = 1;
 
@@ -172,7 +174,7 @@
             car.add(frontWheel);
 
             const bodyCar = new THREE.Mesh(
-                new THREE.BoxBufferGeometry(10, 3, 5),
+                new THREE.BoxBufferGeometry(w, l, h),
                 new THREE.MeshLambertMaterial({ color: 0xff0000 }));
             bodyCar.position.z = 1;
             bodyCar.position.x = 3.2;
@@ -200,7 +202,7 @@
             transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
             let motionState = new Ammo.btDefaultMotionState(transform);
 
-            let colShape = new Ammo.btSphereShape(radius);
+            let colShape = new Ammo.btBoxShape(new Ammo.btVector3(w * 0.5, l * 0.5, h * 0.5));
             colShape.setMargin(0.05);
 
             let localInertia = new Ammo.btVector3(0, 0, 0);
