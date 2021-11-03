@@ -76,7 +76,7 @@
 
         function setCamera() {
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.set(50, 30, -50);
+            camera.position.set(-150, 130, 100);
             scene.add(camera);
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
@@ -97,19 +97,21 @@
             scene.add(ambientLight);
 
             const dirLight3 = new THREE.DirectionalLight(0xfffff0, 0.4, 1);
-            dirLight3.position.set(3, 12, 15);
+            dirLight3.position.set(10, 50, 80);
             dirLight3.castShadow = true;
             dirLight3.shadow.camera.near = 0.1;
             dirLight3.shadow.camera.far = 500;
-            dirLight3.shadow.camera.right = 32;
-            dirLight3.shadow.camera.left = - 32;
-            dirLight3.shadow.camera.top = 32;
-            dirLight3.shadow.camera.bottom = - 32;
+            dirLight3.shadow.camera.right = 320;
+            dirLight3.shadow.camera.left = - 320;
+            dirLight3.shadow.camera.top = 320;
+            dirLight3.shadow.camera.bottom = - 320;
             dirLight3.shadow.mapSize.width = 512;
             dirLight3.shadow.mapSize.height = 512;
-            dirLight3.shadow.radius = 4;
+            dirLight3.shadow.radius = 1;
             dirLight3.shadow.bias = - 0.0005;
             scene.add(dirLight3);
+            const helper = new THREE.DirectionalLightHelper(dirLight3, 5);
+            scene.add(helper);
         }
 
         function setControls() {
@@ -132,7 +134,7 @@
             const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true });
 
             const pyramid_mesh = new THREE.Mesh(geometry, material);
-            pyramid_mesh.position.set(3, 10, 3);
+            pyramid_mesh.position.set(0, 8, 0);
             pyramid_mesh.castShadow = true;
             pyramid_mesh.receiveShadow = true;
             scene.add(pyramid_mesh);
@@ -140,24 +142,33 @@
             const plane = new THREE.BoxGeometry(500, 500, 2);
             const plane_material = new THREE.MeshStandardMaterial({ color: 0xccf0cc });
             const plane_mesh = new THREE.Mesh(plane, plane_material);
-            plane_mesh.position.x = pyramid_mesh.position.x;
-            plane_mesh.position.y = 0;
-            plane_mesh.position.z = pyramid_mesh.position.z;
+            // plane_mesh.position.x = pyramid_mesh.position.x;
+            plane_mesh.position.y = -2;
+            // plane_mesh.position.z = pyramid_mesh.position.z;
             plane_mesh.rotation.x = -(Math.PI / 2);
             plane_mesh.castShadow = true;
             plane_mesh.receiveShadow = true;
             scene.add(plane_mesh);
 
-            const points = [{ x: 0, y: 2 }, { x: 50, y: 2 }, { x: 60, y: 25 }, { x: 80, y: 2 }];
-            loadPoints();
+            const points = loadPoints();
+            console.log(points);
             const path_mesh = create3DShape(points, 60, 2, 0xffccaa);
+            path_mesh.castShadow = true;
+            path_mesh.receiveShadow = true;
             scene.add(path_mesh);
+
+            scene.add(createSphere([100, 20, 0], 0x0000ff));
+            scene.add(createSphere([200, 20, 0], 0x00aaff));
         }
 
         function loadPoints() {
-            let data = localStorage.getItem('data');
-            console.log(data);
+            let _data = localStorage.getItem('data');
+            if (!_data) return [];
+            let data = JSON.parse(_data);
+            return data || [];
         }
+
+        // ==================================================> MESH GEN.
 
         function createSphere(pos, color = 0xff3366) {
             // pos is [x, y, z]
@@ -189,9 +200,9 @@
 
             const material = new THREE.MeshPhongMaterial({ color, flatShading: true });
             const mesh = new THREE.Mesh(shape3d, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
             mesh.translateZ(- width / 2);
-            
-            group.rotation.y = - Math.PI / 2
             group.add(mesh);
             return group;
         }

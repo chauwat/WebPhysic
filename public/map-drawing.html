@@ -13,18 +13,52 @@
             background-color: transparent;
             border: 1px dashed #ACC;
         }
+
+        .next-btn {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 6px 16px;
+            text-align: center;
+            text-decoration: none;
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, .3);
+        }
+
+        .next-btn:hover::after {
+            content: " ";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            opacity: .1;
+        }
+
+        .next-btn:active::after {
+            opacity: .2;
+        }
     </style>
 </head>
 
 <body onload="main()">
+    <button onclick="exportAndGo()" class="next-btn" id="next-btn">Next</button>
+
     <div class="container">
         <svg width="720" height="480" viewBox="0 0 720 480" xmlns="http://www.w3.org/2000/svg" id="paper">
         </svg>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.0/anime.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.0/anime.min.js"></script> -->
+
     <script lang="js">
         var paper, paperViewBoxWidth;
+        var button;
         var isMouseDown = false;
         var prevPoint = {};
         var lineCount = -1;
@@ -36,7 +70,11 @@
             paper.addEventListener('mousedown', onMouseDown);
             paper.addEventListener('mouseup', onMouseUp);
             paper.addEventListener('mousemove', onMouseMove);
+            paper.addEventListener('mouseleave', onMouseUp);
             document.addEventListener('keydown', onKeyDown);
+
+            button = document.getElementById('next-btn');
+            hideNextButton();
         }
 
         function genSvgNode(n, v) {
@@ -57,18 +95,11 @@
                     d: `M${x} ${y}`,
                 });
                 paper.appendChild(newLine);
-                lineData.push([{ x, y }]);
             } else {
                 let line = document.getElementById(lineId);
                 let d = line.getAttribute('d');
                 line.setAttribute('d', d + `L${x} ${y}`);
-                lineData[lineData.length - 1].push({ x, y });
             }
-        }
-
-        function removeLine(lineId) {
-            let line = document.getElementById(lineId);
-            if (line) line.parentNode.removeChild(line);
         }
 
         function mapPoint({ x, y }) {
@@ -79,10 +110,35 @@
             return { x, y };
         }
 
-        function updateLine(x, y) {
-            if ((Math.abs(x - prevPoint.x) + Math.abs(y - prevPoint.y)) <= 10) return;
+        function addLine(x, y) {
+            if ((Math.abs(x - prevPoint.x) + Math.abs(y - prevPoint.y)) <= 20) return;
+
             drawLine(mapPoint({ x, y }), !prevPoint.x);
+            if (!prevPoint.x) lineData.push([{ x, y }]);
+            else lineData[lineData.length - 1].push({ x, y });
+
+            if (lineCount >= 0) showNextButton();
             prevPoint = { x, y };
+        }
+
+        function removeLine(lineId) {
+            let line = document.getElementById(lineId);
+            if (line) line.parentNode.removeChild(line);
+        }
+
+        function undoDrawLine() {
+            console.log('[DEBUG] Undo');
+            lineData.pop();
+            removeLine(`line-${lineCount--}`);
+            if (lineCount < 0) hideNextButton();
+        }
+
+        function hideNextButton() {
+            button.style.display = 'none';
+        }
+
+        function showNextButton() {
+            button.style.display = null;
         }
 
         // ===============================================> USER INPUT
@@ -98,16 +154,31 @@
 
         function onMouseMove(ev) {
             if (isMouseDown) {
-                updateLine(ev.clientX, ev.clientY);
+                addLine(ev.clientX, ev.clientY);
             }
         }
 
         function onKeyDown(e) {
             // Ctrl-Z, Undo, Remove Line
             if (e.keyCode == 90 && e.ctrlKey && lineCount >= 0) {
-                removeLine(`line-${lineCount--}`);
-                lineData.pop();
+                undoDrawLine();
             }
+        }
+
+        // ===============================================> EXPORT
+
+        function exportAndGo() {
+            let data = lineData[0];
+            if (!data) return;
+
+            let y_max = Math.max(...data.map(p => p.y));
+            data = data.map(p => ({ ...p, y: y_max - p.y }));
+            let x_min = Math.min(...data.map(p => p.x));
+            data = data.map(p => ({ ...p, x: p.x - x_min }));
+
+            console.log(data);
+            localStorage.setItem('data', JSON.stringify(data));
+            window.location.href = '/3d-map-generation.html';
         }
     </script>
 </body>
