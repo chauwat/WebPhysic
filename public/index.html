@@ -9,48 +9,109 @@
 
 <body>
     <script src="./build/cannon.js"></script>
-    <script src="./libs/Three.js"></script>
-    <!-- <script src="./build/cannon.demo.js"></script> -->
-    <!-- <script src="./libs/dat.gui.js"></script> -->
-    <!-- <script src="./libs/TrackballControls.js"></script> -->
-    <!-- <script src="./libs/Detector.js"></script> -->
-    <!-- <script src="./libs/Stats.js"></script> -->
-    <!-- <script src="./libs/smoothie.js"></script> -->
+    <script src="./libs/three.js"></script>
     <script type='module'>
 
         import { OrbitControls } from './jsm/controls/OrbitControls.js';
 
+        var meshes = [], bodies = [];
         var scene;
-        var camera, renderer , controls;
+        var camera, renderer, controls;
+        var geometry, material, mesh, markerMaterial, sphere;
+        var world;
+        var dt = 1 / 60;
+
+        function setupPhysics() {
+            world = new CANNON.World();
+            world.gravity.set(0, -10, 0);
+            world.broadphase = new CANNON.NaiveBroadphase();
+        }
+
+        function sync() {
+            world.step(dt);
+            for (var i = 0; i !== meshes.length; i++) {
+                meshes[i].position.copy(bodies[i].position);
+                meshes[i].quaternion.copy(bodies[i].quaternion);
+            }
+        }
 
         function setupGraphics() {
             // set scene
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xbfd1e5);
 
+            // light
+            var light;
+            scene.add(new THREE.AmbientLight(0x666666));
+            light = new THREE.DirectionalLight(0xffffff, 1.75);
+            var d = 20;
+            light.position.set(d, d, d);
+            light.castShadow = true;
+            scene.add(light);
+
             // set camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.2, 50);
-            camera.position.set(10, 30, 70);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.2, 5000);
+            camera.position.set(50, 80, 70);
             camera.lookAt(new THREE.Vector3(0, 0, 10));
-            scene.add(camera);
-            
-            // render
+
+            // renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
-            
-            controls = new OrbitControls( camera, renderer.domElement );
+            renderer.Textureencoding = true;
+            renderer.outputEncoding;
+            renderer.shadowMap.enabled = true;
+
+            // controls camera
+            controls = new OrbitControls(camera, renderer.domElement);
+
             // can resize window
             window.addEventListener('resize', onWindowResize);
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            // controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
-            render();
+        // create floor
+        function createPlane() {
+            geometry = new THREE.PlaneGeometry(100, 100, 2, 2);
+            material = new THREE.MeshLambertMaterial({ color: 0x777777 });
+            mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+            mesh.receiveShadow = true;
+            meshes.push(mesh);
+            scene.add(mesh);
+
+            // create Physics for createPlan()
+            var groundShape = new CANNON.Plane();
+            var groundBody = new CANNON.Body({ mass: 0 });
+            groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+            groundBody.addShape(groundShape);
+            bodies.push(groundBody);
+            world.addBody(groundBody);
         }
 
-        function render() {
+        // create ball
+        function createBall() {
+            geometry = new THREE.SphereGeometry(15);
+            material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            sphere = new THREE.Mesh(geometry, material);
+            sphere.position.y = 50;
+            scene.add(sphere);
+            meshes.push(sphere);
+
+             // create Physics for createBall()
+            var mass = 1 , radius = 15;
+            var ballShape = new CANNON.Sphere(radius);
+            var ballBody = new CANNON.Body({ mass: mass});
+            ballBody.addShape(ballShape);
+            ballBody.position.set(0,50,0);
+            bodies.push(ballBody);
+            world.addBody(ballBody);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            sync();
             renderer.render(scene, camera);
         }
 
@@ -60,7 +121,11 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
+        setupPhysics();
         setupGraphics();
+        createPlane();
+        createBall();
+        sync();
         animate();
 
     </script>
