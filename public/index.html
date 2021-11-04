@@ -8,21 +8,60 @@
 </head>
 
 <body>
-    <script src="../build/cannon.js"></script>
-    <script src="../build/cannon.demo.js"></script>
-    <script src="../libs/dat.gui.js"></script>
-    <script src="../libs/Three.js"></script>
-    <script src="../libs/TrackballControls.js"></script>
-    <script src="../libs/Detector.js"></script>
-    <script src="../libs/Stats.js"></script>
-    <script src="../libs/smoothie.js"></script>
-    <script>
+    <script src="./build/cannon.js"></script>
+    <script src="./libs/Three.js"></script>
+    <!-- <script src="./build/cannon.demo.js"></script> -->
+    <!-- <script src="./libs/dat.gui.js"></script> -->
+    <!-- <script src="./libs/TrackballControls.js"></script> -->
+    <!-- <script src="./libs/Detector.js"></script> -->
+    <!-- <script src="./libs/Stats.js"></script> -->
+    <!-- <script src="./libs/smoothie.js"></script> -->
+    <script type='module'>
 
-    var scene;
-    function setupGraphics(){
-        scene = new THREE.Scene();
-        
-    }
+        import { OrbitControls } from './jsm/controls/OrbitControls.js';
+
+        var scene;
+        var camera, renderer , controls;
+
+        function setupGraphics() {
+            // set scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xbfd1e5);
+
+            // set camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.2, 50);
+            camera.position.set(10, 30, 70);
+            camera.lookAt(new THREE.Vector3(0, 0, 10));
+            scene.add(camera);
+            
+            // render
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            
+            controls = new OrbitControls( camera, renderer.domElement );
+            // can resize window
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            // controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
+            render();
+        }
+
+        function render() {
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        setupGraphics();
+        animate();
 
     </script>
 </body>
