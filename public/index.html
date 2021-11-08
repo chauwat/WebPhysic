@@ -106,14 +106,14 @@
                 var wheel = vehicle.wheelInfos[i];
 
                 // CREATE WHEEL-BODY (VISUAL)
-                geometry = new THREE.CylinderGeometry(wheel.radius, wheel.radius, wheel.radius/2, 20);
+                geometry = new THREE.CylinderGeometry(wheel.radius, wheel.radius, wheel.radius / 2, 20);
                 material = new THREE.MeshBasicMaterial({ color: 0x000000 });
                 var wheelMesh = new THREE.Mesh(geometry, material);
 
                 wheelMesh.castShadow = true;
                 wheelMesh.receiveShadow = true;
                 meshes.push(wheelMesh);
-                scene.add(wheelMesh);
+                // scene.add(wheelMesh);
 
                 // CREATE WHEEL-BODY PHYSICS
                 var wheelShape = new CANNON.Cylinder(wheel.radius, wheel.radius, wheel.radius / 2, 20);
@@ -124,7 +124,7 @@
                 wheelBody.addShape(wheelShape, new CANNON.Vec3(), CANNON_deg2quat(0, 0, 0));
                 wheelBodies.push(wheelBody);
                 bodies.push(wheelBody);
-                world.addBody(wheelBody);
+                // world.addBody(wheelBody);
 
                 // var wheelShape = new CANNON.Cylinder(wheel.radius, wheel.radius, wheel.radius / 2, 20);
                 // var wheelBody = new CANNON.Body({ mass: 0 });
@@ -141,7 +141,6 @@
 
             }
 
-
             world.addEventListener('postStep', function () {
                 for (var i = 0; i < vehicle.wheelInfos.length; i++) {
                     vehicle.updateWheelTransform(i);
@@ -151,38 +150,7 @@
                     wheelBody.quaternion.copy(t.quaternion);
                 }
             });
-
-        var matrix = [];
-        var sizeX = 64, sizeY = 64;
-
-        for (var i = 0; i < sizeX; i++) {
-            matrix.push([]);
-            for (var j = 0; j < sizeY; j++) {
-                var height = Math.cos(i / sizeX * Math.PI * 5) * Math.cos(j / sizeY * Math.PI * 5) * 2 + 2;
-                if (i === 0 || i === sizeX - 1 || j === 0 || j === sizeY - 1)
-                    height = 3;
-                matrix[i].push(height);
-            }
         }
-
-        // CREATE HEIGHT-FIELD (VISUAL)
-        geometry = new THREE.BoxGeometry(4, 2, 6);
-        material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
-        var chassisMesh = new THREE.Mesh(geometry, material);
-        chassisMesh.castShadow = true;
-        chassisMesh.receiveShadow = true;
-        meshes.push(chassisMesh);
-        scene.add(chassisMesh);
-
-        // CREATE HEIGHT-FIELD PHYSICS
-        var hfShape = new CANNON.Heightfield(matrix, {
-            elementSize: 100 / sizeX
-        });
-        var hfBody = new CANNON.Body({ mass: 0 });
-        hfBody.addShape(hfShape);
-        hfBody.position.set(-sizeX * hfShape.elementSize / 2, -sizeY * hfShape.elementSize / 2, -1);
-        world.addBody(hfBody);
-    }
 
         // create plane
         function createPlane() {
@@ -294,6 +262,56 @@
         createRayCast();
         sync();
         animate();
+
+        document.onkeydown = handler;
+        document.onkeyup = handler;
+        var maxSteerVal = 0.5;
+        var maxForce = 1000;
+        var brakeForce = 1000000;
+
+        function handler(event) {
+            var up = (event.type == 'keyup');
+
+            if (!up && event.type !== 'keydown') {
+                return;
+            }
+
+            vehicle.setBrake(0, 0);
+            vehicle.setBrake(0, 1);
+            vehicle.setBrake(0, 2);
+            vehicle.setBrake(0, 3);
+
+            switch (event.keyCode) {
+
+                case 38: // forward
+                    vehicle.applyEngineForce(up ? 0 : -maxForce, 2);
+                    vehicle.applyEngineForce(up ? 0 : -maxForce, 3);
+                    break;
+
+                case 40: // backward
+                    vehicle.applyEngineForce(up ? 0 : maxForce, 2);
+                    vehicle.applyEngineForce(up ? 0 : maxForce, 3);
+                    break;
+
+                case 66: // b
+                    vehicle.setBrake(brakeForce, 0);
+                    vehicle.setBrake(brakeForce, 1);
+                    vehicle.setBrake(brakeForce, 2);
+                    vehicle.setBrake(brakeForce, 3);
+                    break;
+
+                case 39: // right
+                    vehicle.setSteeringValue(up ? 0 : -maxSteerVal, 0);
+                    vehicle.setSteeringValue(up ? 0 : -maxSteerVal, 1);
+                    break;
+
+                case 37: // left
+                    vehicle.setSteeringValue(up ? 0 : maxSteerVal, 0);
+                    vehicle.setSteeringValue(up ? 0 : maxSteerVal, 1);
+                    break;
+
+            }
+        }
 
     </script>
 </body>
