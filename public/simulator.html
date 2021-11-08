@@ -213,11 +213,11 @@
 
         function setWorld() {
             addGruond();
-            addSphere();
-            addPyramid();
+            // addSphere();
+            // addPyramid();
             // addBox();
             create3DShape(loadDataPoints(), 50);
-            addHitBox({ x: 0, y: 8, z: 0 }, 1);
+            addHitBox({ x: 0, y: 8, z: 0 }, 0 , 1 ,1 , true);
             createRayCast();
         }
 
@@ -416,7 +416,7 @@
             return sphere;
         }
 
-        function create3DShape(points, width = 10, depth = 2, color = 0xffffff, debug = true) {
+        function create3DShape(points, width = 10, depth = 2, color = 0xffffff, debug = false) {
             function calcLength(posA, posB) {
                 return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
             }
@@ -470,16 +470,16 @@
 
         function createRayCast(mass = 500) {
             var options = {
-                radius: 5,
+                radius: 2.5,
                 directionLocal: new CANNON.Vec3(0, -1, 0),
                 suspensionStiffness: 45,
-                suspensionRestLength: 8,
-                frictionSlip: 5,
+                suspensionRestLength: 2,
+                frictionSlip: 10,
                 dampingRelaxation: 2.3,
                 dampingCompression: 4.5,
                 maxSuspensionForce: 200000,
                 rollInfluence: 0.01,
-                axleLocal: new CANNON.Vec3(-1, 0, 0),
+                axleLocal: new CANNON.Vec3(0, 0, -1),
                 chassisConnectionPointLocal: new CANNON.Vec3(1, 1, 0),
                 maxSuspensionTravel: 0.25,
                 customSlidingRotationalSpeed: -30,
@@ -489,23 +489,22 @@
             var groundMaterial = new CANNON.Material("groundMaterial");
             var wheelMaterial = new CANNON.Material("wheelMaterial");
             var wheelGroundContactMaterial = window.wheelGroundContactMaterial = new CANNON.ContactMaterial(wheelMaterial, groundMaterial, {
-                friction: 0.3,
+                friction: 0.6,
                 restitution: 2,
                 contactEquationStiffness: 1000
             });
             world.addContactMaterial(wheelGroundContactMaterial);
 
             // CREATE CHASSIS PHYSICS
-            var chassisShape = new CANNON.Box(new CANNON.Vec3(7.5, 7.5, 15));
+            var chassisShape = new CANNON.Box(new CANNON.Vec3(12, 2, 6));
             var chassisBody = new CANNON.Body({ mass });
             chassisBody.addShape(chassisShape);
-            chassisBody.position.set(130, 100, 0);
-            // chassisBody.angularVelocity.set(0, 0, 1.5);
+            chassisBody.position.set(40, 10, 0);
             bodies.push(chassisBody);
             world.addBody(chassisBody);
 
             // CREATE CHASSIS (VISUAL)
-            var geometry = new THREE.BoxGeometry(15, 15, 30);
+            var geometry = new THREE.BoxGeometry(24, 4, 12);
             var material = new THREE.MeshLambertMaterial({ color: 0x655bf5 });
             var chassisMesh = new THREE.Mesh(geometry, material);
             chassisMesh.castShadow = true;
@@ -525,21 +524,21 @@
             // CREATE THE VEHICLE
             vehicle = new CANNON.RaycastVehicle({
                 chassisBody: chassisBody,
-                indexRightAxis: 0, // x
+                indexRightAxis: 2, // x
                 indexUpAxis: 1, // y
-                indexForwardAxis: 2, // z
+                indexForwardAxis: 0, // z
             });
 
-            options.chassisConnectionPointLocal.set(7.5, 0, -7.5);
+            options.chassisConnectionPointLocal.set(-6, 0, 6);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(-7.5, 0, -7.5);
+            options.chassisConnectionPointLocal.set(6, 0, 6);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(7.5, 0, 7.5);
+            options.chassisConnectionPointLocal.set(-6, 0, -6);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(-7.5, 0, 7.5);
+            options.chassisConnectionPointLocal.set(6, 0, -6);
             vehicle.addWheel(options);
 
             vehicle.addToWorld(world);
@@ -554,7 +553,7 @@
                 material = new THREE.MeshPhongMaterial({ color: 0x000000 });
                 var wheelMesh = new THREE.Mesh(geometry, material);
 
-                wheelMesh.geometry.rotateZ(Math.PI / 2);
+                wheelMesh.geometry.rotateX(Math.PI / 2);
                 wheelMesh.castShadow = true;
                 wheelMesh.receiveShadow = true;
                 wheelVisuals.push(wheelMesh);
@@ -587,7 +586,7 @@
 
         // ===================================================================================> Car Control
 
-        function carHandler(maxForce = 800, maxSteerVal = 0.6, brakeForce = 1000000) {
+        function carHandler(maxForce = 2000, maxSteerVal = 0.6, brakeForce = 1000000) {
             vehicle.setBrake(0, 0);
             vehicle.setBrake(0, 1);
             vehicle.setBrake(0, 2);
@@ -595,18 +594,22 @@
 
             if (actions.carForward || actions.carBackward) {
 
-                vehicle.applyEngineForce(actions.carForward ? -maxForce : maxForce, 0);
-                vehicle.applyEngineForce(actions.carForward ? -maxForce : maxForce, 1);
+                vehicle.applyEngineForce(actions.carForward ? maxForce : -maxForce, 0);
+                vehicle.applyEngineForce(actions.carForward ? maxForce : -maxForce, 1);
+                vehicle.applyEngineForce(actions.carForward ? maxForce : -maxForce, 2);
+                vehicle.applyEngineForce(actions.carForward ? maxForce : -maxForce, 3);
             } else {
                 vehicle.applyEngineForce(0, 0);
                 vehicle.applyEngineForce(0, 1);
+                vehicle.applyEngineForce(0, 2);
+                vehicle.applyEngineForce(0, 3);
             }
 
             if (actions.carLeft || actions.carRight) {
-                vehicle.setSteeringValue(actions.carLeft ? maxSteerVal : -maxSteerVal, 2);
+                vehicle.setSteeringValue(actions.carLeft ? maxSteerVal : -maxSteerVal, 1);
                 vehicle.setSteeringValue(actions.carLeft ? maxSteerVal : -maxSteerVal, 3);
             } else {
-                vehicle.setSteeringValue(0, 2);
+                vehicle.setSteeringValue(0, 1);
                 vehicle.setSteeringValue(0, 3);
             }
 
