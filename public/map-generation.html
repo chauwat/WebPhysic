@@ -11,6 +11,14 @@
 			background-color: #ccc;
 			color: #000;
 		}
+
+		#physic-info {
+			color: #ffffff;
+			background: rgba(0, 0, 0, .3);
+			position: absolute;
+			bottom: 0px;
+			padding: 0 5px;
+		}
 	</style>
 </head>
 
@@ -18,6 +26,7 @@
 	<div id="info">
 		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - orbit controls
 	</div>
+	<div id="physic-info">0.0 km/h</div>
 
 	<script src="./build/cannon.js"></script>
 
@@ -25,13 +34,9 @@
 		function printEuler(euler) {
 			console.log(euler._x * 180 / Math.PI, euler._y * 180 / Math.PI, euler._z * 180 / Math.PI);
 		}
-		// function THREE_quat2euler(quat) {
-		// 	var euler = new THREE.Euler().setFromQuaternion(quat)
-		// 	// console.log(euler._x * 180 / Math.PI, euler._y * 180 / Math.PI, euler._z * 180 / Math.PI)
-		// 	return euler;
-		// }
+
 		function CANNON_deg2quat(...deg) {
-			let rad = deg.map(v => v * Math.PI/ 180);
+			let rad = deg.map(v => v * Math.PI / 180);
 			var quat = new CANNON.Quaternion().setFromEuler(...rad);
 			return quat;
 		}
@@ -42,9 +47,23 @@
 		import { GUI } from './jsm/libs/dat.gui.module.js';
 		const loader = new GLTFLoader();
 
+		var debugInfo;
+
+		var keysActions = {
+			ArrowUp: 'boxPush',
+			ArrowDown: '',
+			ArrowLeft: '',
+			ArrowRight: '',
+			KeyW: 'ballForward',
+			KeyS: 'ballBackward',
+			KeyA: 'ballLeft',
+			KeyD: 'ballRight'
+		};
+		var actions = {};
+
 		let scene, camera, controls, renderer;
 		let world;
-		var enablePhysic = false;
+		var enablePhysic = true;
 		var bodies = [], meshes = [];
 		var syncs = [];
 
@@ -64,12 +83,12 @@
 
 		function initPhysic() {
 			world = new CANNON.World();
-			world.gravity.set(0, 0, -10);
+			world.gravity.set(0, -10, 0);
 		}
 
 		function animate(millis) {
 			requestAnimationFrame(animate);
-			controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
+			if (controls) controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
 			if (enablePhysic) updateVisuals();
 			render();
 		}
@@ -110,8 +129,8 @@
 
 		function setCamera() {
 			camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-			camera.position.set(50, 0, 40);
-			camera.up.set(0, 0, 1);
+			camera.position.set(-40, 30, 30);
+			// camera.up.set(0, 0, 1);
 			scene.add(camera);
 			window.addEventListener('resize', () => {
 				camera.aspect = window.innerWidth / window.innerHeight;
@@ -149,8 +168,9 @@
 
 		function setControls() {
 			controls = new OrbitControls(camera, renderer.domElement);
+
 			// controls.listenToKeyEvents( window ); // optional
-			//controls.addEventListener( 'change', render ); // call this only in static scenes (i.e., if there is no animation loop)
+			// controls.addEventListener( 'change', render ); // call this only in static scenes (i.e., if there is no animation loop)
 
 			controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
 			controls.dampingFactor = 0.05;
@@ -159,13 +179,36 @@
 			controls.minDistance = 1;
 			controls.maxDistance = 500;
 			controls.maxPolarAngle = Math.PI / 2;
+
+			function keyup(e) {
+				if (keysActions[e.code]) {
+					actions[keysActions[e.code]] = false;
+					e.preventDefault();
+					e.stopPropagation();
+					return false;
+				}
+			}
+
+			function keydown(e) {
+				if (keysActions[e.code]) {
+					actions[keysActions[e.code]] = true;
+					e.preventDefault();
+					e.stopPropagation();
+					return false;
+				}
+			}
+
+			window.addEventListener('keydown', keydown);
+			window.addEventListener('keyup', keyup);
 		}
 
 		function setWorld() {
 			addGruond();
-			addPyramid();
-			addBox();
 			addSphere();
+			addPyramid();
+			// addBox();
+			create3DShape(loadDataPoints(), 50);
+			addHitBox({ x: 0, y: 8, z: 0 }, 1);
 		}
 
 		function setGUI() {
@@ -173,6 +216,15 @@
 			const config = { enablePhysic: false };
 			const matChanger = (value) => { enablePhysic = config.enablePhysic; };
 			gui.add(config, 'enablePhysic', false).onChange(matChanger);
+
+			debugInfo = document.getElementById('physic-info');
+		}
+
+		function loadDataPoints() {
+			let _data = localStorage.getItem('data');
+			if (!_data) return [];
+			let data = JSON.parse(_data);
+			return data || [];
 		}
 
 		// ====================================================================> World's Object
@@ -184,7 +236,7 @@
 			var groundBody = new CANNON.Body({
 				mass: 0,
 				material: groundMaterial,
-				// quaternion: CANNON_deg2quat(15, 0, 0)
+				quaternion: CANNON_deg2quat(-90, 0, 0)
 			});
 			groundBody.addShape(groundShape);
 			world.addBody(groundBody);
@@ -199,27 +251,27 @@
 			ground_mesh.receiveShadow = true;
 			scene.add(ground_mesh);
 			meshes.push(ground_mesh);
-			
+
 			syncs.push(() => {
 				ground_mesh.position.copy(groundBody.position);
 				ground_mesh.quaternion.copy(groundBody.quaternion);
 			});
 		}
 
-		function addPyramid({x, y, z} = {x: 0, y: 0, z: 3}) {
+		function addPyramid({ x, y, z } = { x: 0, y: 3, z: 10 }) {
 			var pyramidMaterial = new CANNON.Material();
-			var pyramidShape = new CANNON.Cylinder(0, 1, 5, 4, 1);
+			var pyramidShape = new CANNON.Cylinder(0.01, 1, 5, 4, 1);
 			var pyramidBody = new CANNON.Body({
-				mass: 50,
+				mass: 10,
 				material: pyramidMaterial,
 				position: new CANNON.Vec3(x, y, z),
-				quaternion: CANNON_deg2quat(90, 0, 0) // new CANNON.Quaternion(0, 0, 0, 1)
+				quaternion: CANNON_deg2quat(45, 0, 0) // new CANNON.Quaternion(0, 0, 0, 1)
 			});
 			pyramidBody.addShape(pyramidShape, null, CANNON_deg2quat(-90, 0, 0));
 			world.addBody(pyramidBody);
 			bodies.push(pyramidBody);
 
-			const geometry = new THREE.CylinderGeometry(0, 1, 5, 4, 1);
+			const geometry = new THREE.CylinderGeometry(0.01, 1, 5, 4, 1);
 			const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, wireframe: false });
 			const pyramid_mesh = new THREE.Mesh(geometry, material);
 			pyramid_mesh.position.set(x, y, z);
@@ -234,8 +286,8 @@
 			});
 		}
 
-		function addBox({x, y, z} = {x: 0, y: 0, z: 1}) {
-			let size = { x: 2, y: 2, z: .2 };
+		function addBox({ x, y, z } = { x: 0, y: 8, z: 1 }) {
+			let size = { x: 5, y: .2, z: 2 };
 			var phyMaterial = new CANNON.Material();
 			var phyShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.5, size.y * 0.5, size.z * 0.5));
 			var phyBody = new CANNON.Body({
@@ -255,19 +307,21 @@
 			mesh.receiveShadow = true;
 			scene.add(mesh);
 			meshes.push(mesh);
-			
+
 			syncs.push(() => {
 				mesh.position.copy(phyBody.position);
 				mesh.quaternion.copy(phyBody.quaternion);
+				if (actions.boxPush) {
+					phyBody.applyLocalForce(new CANNON.Vec3(0, 250, 0), new CANNON.Vec3(0, 0, 0));
+				}
 			});
 		}
 
-		function addSphere({x, y, z} = {x: -5, y: 5, z: 6}, r = 1) {
-			let size = { x: 2, y: 2, z: .2 };
+		function addSphere({ x, y, z } = { x: -5, y: 5, z: 6 }, r = 1) {
 			var phyMaterial = new CANNON.Material();
 			var phyShape = new CANNON.Sphere(r);
 			var phyBody = new CANNON.Body({
-				mass: 10,
+				mass: 1,
 				material: phyMaterial,
 				position: new CANNON.Vec3(x, y, z),
 			});
@@ -275,19 +329,124 @@
 			world.addBody(phyBody);
 			bodies.push(phyBody);
 
-			let geometry = new THREE.SphereGeometry(r, 8, 8);
-			const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, wireframe: false });
+			let geometry = new THREE.SphereGeometry(r, 12, 12);
+			const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, wireframe: true });
 			const mesh = new THREE.Mesh(geometry, material);
 			mesh.position.set(x, y, z);
 			mesh.castShadow = true;
 			mesh.receiveShadow = true;
 			scene.add(mesh);
 			meshes.push(mesh);
-			
+
 			syncs.push(() => {
+				let delta = new THREE.Vector3(phyBody.position.x - mesh.position.x, phyBody.position.y - mesh.position.y, phyBody.position.z - mesh.position.z);
+				camera.position.add(delta)
+				controls.target.copy(phyBody.position);
+				debugInfo.innerHTML = `x: ${phyBody.position.x}<br>y: ${phyBody.position.y}<br>z: ${phyBody.position.z}`
+				
 				mesh.position.copy(phyBody.position);
 				mesh.quaternion.copy(phyBody.quaternion);
+				const centerInWorldCoords = phyBody.pointToWorldFrame(new CANNON.Vec3());
+
+				if (actions.ballForward) {
+					phyBody.applyForce(new CANNON.Vec3(100, 0, 0), centerInWorldCoords);
+				}
+				if (actions.ballBackward) {
+					phyBody.applyForce(new CANNON.Vec3(-100, 0, 0), centerInWorldCoords);
+				}
+				if (actions.ballLeft) {
+					phyBody.applyForce(new CANNON.Vec3(0, 0, -100), centerInWorldCoords);
+				}
+				if (actions.ballRight) {
+					phyBody.applyForce(new CANNON.Vec3(0, 0, 100), centerInWorldCoords);
+				}
 			});
+		}
+
+		function addHitBox({ x, y, z } = { x: 0, y: 8, z: 1 }, rad = 0, length = 1, width = 1, debug = true) {
+			let size = { x: length, y: 1, z: width };
+			var phyMaterial = new CANNON.Material();
+			var phyShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.5, size.y * 0.5, size.z * 0.5));
+			var phyBody = new CANNON.Body({
+				mass: 0,
+				material: phyMaterial,
+				position: new CANNON.Vec3(x, y - size.y / 2, z),
+				quaternion: new CANNON.Quaternion().setFromEuler(0, 0, rad)
+			});
+			phyBody.addShape(phyShape);
+			world.addBody(phyBody);
+
+			if (debug) {	
+				let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+				const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, wireframe: true });
+				const mesh = new THREE.Mesh(geometry, material);
+				mesh.position.set(x, y, z);
+				mesh.position.copy(phyBody.position);
+				mesh.quaternion.copy(phyBody.quaternion);
+				mesh.castShadow = true;
+				mesh.receiveShadow = true;
+				scene.add(mesh);
+			}
+		}
+
+		function createDebugSphere(pos, color = 0xff3366) {
+			// pos is [x, y, z]
+			const geometry = new THREE.SphereGeometry(2, 16, 16);
+			const material = new THREE.MeshBasicMaterial({ color, wireframe: true });
+			const sphere = new THREE.Mesh(geometry, material);
+			sphere.position.set(...pos)
+			return sphere;
+		}
+
+		function create3DShape(points, width = 10, depth = 2, color = 0xffffff, debug = false) {
+			function calcLength(posA, posB) {
+				return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
+			}
+
+			function calcRotation(posA, posB) {
+				return Math.atan((posA.y - posB.y) / (posA.x - posB.x))
+			}
+
+			const group = new THREE.Group();
+			let path = new THREE.ShapePath();
+			for (let i = 0; i < points.length; i++) {
+				let point = points[i];
+				if (i == 0) path.moveTo(point.x, point.y);
+				else path.lineTo(point.x, point.y);
+				if (debug) group.add(createDebugSphere([point.x, point.y, 0]));
+
+				if (i != points.length - 1) {
+					let nxtPoint = points[i + 1];
+					let length = calcLength(point, nxtPoint);
+					let rad = calcRotation(point, nxtPoint);
+					let pos = {};
+					for (let key in point) {
+						pos[key] = (point[key] + nxtPoint[key]) / 2;
+					}
+					// console.log(point, nxtPoint, calcLength(point, nxtPoint), calcRotation(point, nxtPoint));
+					addHitBox(pos, rad, length, width)
+				}
+			}
+
+			for (let i = points.length - 1; i >= 0; i--) {
+				let point = points[i];
+				if (i == 0) path.lineTo(point.x, point.y - depth);
+				else path.lineTo(point.x, point.y - depth);
+			}
+
+			let simpleShapes = path.toShapes(true);
+			let shape3d = new THREE.ExtrudeGeometry(simpleShapes[0], { depth: width, bevelEnabled: false });
+
+			const material = new THREE.MeshPhongMaterial({ color, flatShading: true, wireframe: false });
+			const mesh = new THREE.Mesh(shape3d, material);
+			mesh.castShadow = true;
+			mesh.receiveShadow = true;
+			mesh.translateZ(- width / 2);
+			group.add(mesh);
+
+			group.castShadow = true;
+			group.receiveShadow = true;
+			scene.add(group);
 		}
 	</script>
 </body>
