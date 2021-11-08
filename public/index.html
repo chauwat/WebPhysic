@@ -106,37 +106,35 @@
 
                 // CREATE WHEEL-BODY (VISUAL)
                 geometry = new THREE.CylinderGeometry(wheel.radius, wheel.radius, wheel.radius / 2, 20);
-                material = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                material = new THREE.MeshPhongMaterial({ color: 0x000000 });
                 var wheelMesh = new THREE.Mesh(geometry, material);
 
+                wheel.geometry.rotateZ(Math.PI/2);
                 wheelMesh.castShadow = true;
                 wheelMesh.receiveShadow = true;
                 meshes.push(wheelMesh);
                 scene.add(wheelMesh);
 
                 // CREATE WHEEL-BODY PHYSICS
-                var wheelShape = new CANNON.Cylinder(wheel.radius, wheel.radius, wheel.radius / 2, 20);
-                var wheelBody = new CANNON.Body({ mass: 0 });
-                wheelBody.type = CANNON.Body.KINEMATIC;
-                wheelBody.collisionFilterGroup = 0;
-
-                wheelBody.addShape(wheelShape, new CANNON.Vec3(), CANNON_deg2quat(0, 1, 0));
-                wheelBodies.push(wheelBody);
-                bodies.push(wheelBody);
-                world.addBody(wheelBody);
-
                 // var wheelShape = new CANNON.Cylinder(wheel.radius, wheel.radius, wheel.radius / 2, 20);
                 // var wheelBody = new CANNON.Body({ mass: 0 });
                 // wheelBody.type = CANNON.Body.KINEMATIC;
                 // wheelBody.collisionFilterGroup = 0;
-
-                // var q = new CANNON.Quaternion();
-                // q.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 4);
-
-                // wheelBody.addShape(wheelShape , new CANNON.Vec3() , q);
+                // wheelBody.addShape(wheelShape, new CANNON.Vec3(), CANNON_deg2quat(0, 90, 0));
                 // wheelBodies.push(wheelBody);
                 // bodies.push(wheelBody);
                 // world.addBody(wheelBody);
+
+                var wheelShape = new CANNON.Cylinder(wheel.radius, wheel.radius, wheel.radius / 2, 20);
+                var q = new CANNON.Quaternion();
+                q.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+                var wheelBody = new CANNON.Body({ mass: 0 });
+                wheelShape.transformAllPoints(new CANNON.Vec3() , q);
+                wheelBody.addShape(wheelShape);
+                wheelBody.collisionFilterGroup = 0;
+                wheelBodies.push(wheelBody);
+                bodies.push(wheelBody);
+                world.addBody(wheelBody);
 
             }
 
@@ -151,13 +149,33 @@
             });
         }
 
+
+        function createCylinder() {
+            geometry = new THREE.CylinderGeometry(2, 2, 1, 20);
+            material = new THREE.MeshLambertMaterial({ color: 0x000000 });
+            var wheelMesh = new THREE.Mesh(geometry, material);
+            meshes.push(wheelMesh);
+            scene.add(wheelMesh);
+
+            var wheelShape = new CANNON.Cylinder(2, 2, 2, 20);
+            var wheelBody = new CANNON.Body({ mass: 1 });
+
+            var quat = new CANNON.Quaternion();
+            quat.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+
+            wheelBody.addShape(wheelShape, new CANNON.Vec3(), CANNON_deg2quat(0, 0, 90));
+            wheelBody.position.set(0, 4, 0);
+            bodies.push(wheelBody);
+            world.addBody(wheelBody);
+
+        }
+
         // create plane
         function createPlane() {
             geometry = new THREE.PlaneGeometry(100, 100, 2, 2);
             material = new THREE.MeshLambertMaterial({ color: 0x777777 });
             mesh = new THREE.Mesh(geometry, material);
             mesh.castShadow = true;
-            // mesh.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
             mesh.receiveShadow = true;
             meshes.push(mesh);
             scene.add(mesh);
@@ -254,13 +272,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        setupPhysics();
-        setupGraphics();
-        createPlane();
-        // createBall();
-        createRayCast();
-        sync();
-        animate();
+
 
         document.onkeydown = handler;
         document.onkeyup = handler;
@@ -311,6 +323,15 @@
 
             }
         }
+
+        setupPhysics();
+        setupGraphics();
+        createPlane();
+        // createBall();
+        createRayCast();
+        // createCylinder();
+        sync();
+        animate();
 
     </script>
 </body>
