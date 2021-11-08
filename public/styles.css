@@ -1,0 +1,78 @@
+
+* {
+    font-family: "Mitr", sans-serif;
+}
+
+body {
+    margin: 0;
+    padding:0;
+    background: rgb(222,240,222);
+    background: linear-gradient(90deg, rgba(222,240,222,1) 42%, rgba(210,234,254,1) 100%);
+}
+
+.container {
+    /* outline: 2px solid red; */
+    width: 100%;
+    height: auto;
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.container > div {
+    background: rgb(222,240,222);
+    background: linear-gradient(90deg, rgba(222,240,222,1) 42%, rgba(254,233,210,1) 100%);
+}
+
+.container > div > div > button {
+    transition: width 2s;
+}
+
+.container > div > div > button:hover {
+    background-color: white;
+    cursor: pointer;
+    width: 85px;
+}
+
+.carpic {
+    /* border: 2px solid black; */
+    width: 30%;
+    height: 350px;
+}
+
+.info {
+    /* border: 2px solid black; */
+    width: 30%;
+    height: 600px;
+}
+
+.heading {
+    text-align: center;
+    margin: 40px;
+}
+
+.text {
+    margin: 20px 20px;
+    font-size: 18px;
+    /* outline: 1px solid orange; */
+}
+
+.btselect {
+    margin: 0px auto;
+    display: inline-block;
+    text-align: center;
+    height: 40px;
+    width: 100px;
+    border-radius: 5px;
+
+}
+
+.text-center {
+    text-align: center;
+}
+.custom-form > input {
+    width: 100%;
+}
+
+.custom-form {
+    padding: 0 32px;
+}
