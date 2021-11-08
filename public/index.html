@@ -9,13 +9,8 @@
 
 <body>
     <script src="./build/cannon.js"></script>
-    <script src="./libs/dat.gui.js"></script>
     <script src="./libs/Three.js"></script>
-    <script src="./libs/TrackballControls.js"></script>
     <script src="./build/three.min.js"></script>
-    <script src="./libs/Detector.js"></script>
-    <script src="./libs/Stats.js"></script>
-    <script src="./libs/smoothie.js"></script>
 
     <script type='module'>
 
@@ -143,12 +138,9 @@
 
             world.addEventListener('postStep', function () {
                 for (var i = 0; i < vehicle.wheelInfos.length; i++) {
+                    // wheel update visuals
                     vehicle.updateWheelTransform(i);
                     var t = vehicle.wheelInfos[i].worldTransform;
-                    // update wheel physics
-                    wheelBodies[i].position.copy(t.position);
-                    wheelBodies[i].quaternion.copy(t.quaternion);
-                    // wheel update visuals
                     wheelVisuals[i].position.copy(t.position);
                     wheelVisuals[i].quaternion.copy(t.quaternion);
                 }
@@ -257,7 +249,7 @@
             vehicle.setBrake(0, 1);
             vehicle.setBrake(0, 2);
             vehicle.setBrake(0, 3);
-
+            
             switch (event.keyCode) {
 
                 case 38: // forward
@@ -296,6 +288,7 @@
         createRayCast();
         sync();
         animate();
+        console.log(meshes, bodies);
 
     </script>
 </body>
