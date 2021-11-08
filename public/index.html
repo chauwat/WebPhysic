@@ -9,13 +9,8 @@
 
 <body>
     <script src="./build/cannon.js"></script>
-    <script src="./libs/dat.gui.js"></script>
     <script src="./libs/Three.js"></script>
-    <script src="./libs/TrackballControls.js"></script>
     <script src="./build/three.min.js"></script>
-    <script src="./libs/Detector.js"></script>
-    <script src="./libs/Stats.js"></script>
-    <script src="./libs/smoothie.js"></script>
 
     <script type='module'>
 
@@ -28,7 +23,7 @@
         var world, vehicle;
         var wheelGroundContactMaterial;
         var dt = 1 / 60;
-        var mass = 500;
+        var mass = 1500;
         var groundMaterial, wheelMaterial;
 
         function setupPhysics() {
@@ -48,7 +43,7 @@
             var options = {
                 radius: 0.5,
                 directionLocal: new CANNON.Vec3(0, -1, 0),
-                suspensionStiffness: 45,
+                suspensionStiffness: 50,
                 suspensionRestLength: 1,
                 frictionSlip: 5,
                 dampingRelaxation: 2.3,
@@ -71,26 +66,23 @@
             });
             world.addContactMaterial(wheelGroundContactMaterial);
 
-            // CREATE CHASSIS (VISUAL)
+            // CREATE BODY (VISUAL)
             geometry = new THREE.BoxGeometry(2, 2, 4);
             material = new THREE.MeshLambertMaterial({ color: 0x655bf5});
             var chassisMesh = new THREE.Mesh(geometry, material);
-
             chassisMesh.castShadow = true;
             chassisMesh.receiveShadow = true;
-
             meshes.push(chassisMesh);
             scene.add(chassisMesh);
 
-            // CREATE CHASSIS PHYSICS
+            // CREATE BODY (PHYSICS)
             var chassisShape = new CANNON.Box(new CANNON.Vec3(1, 1, 2));
             var chassisBody = new CANNON.Body({ mass: mass });
             chassisBody.addShape(chassisShape);
-            chassisBody.position.set(0, 4, 0);
-            // chassisBody.angularVelocity.set(0, 0, 1.5);
+            chassisBody.position.set(0, 6, 0);
             bodies.push(chassisBody);
             world.addBody(chassisBody);
-
+            
             // CREATE THE VEHICLE
             vehicle = new CANNON.RaycastVehicle({
                 chassisBody: chassisBody,
@@ -99,16 +91,16 @@
                 indexForwardAxis: 2, // z
             });
 
-            options.chassisConnectionPointLocal.set(0.7, 0, -1);
+            options.chassisConnectionPointLocal.set(1, 0, -1);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(-0.7, 0, -1);
+            options.chassisConnectionPointLocal.set(-1, 0, -1);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(0.7, 0, 1);
+            options.chassisConnectionPointLocal.set(1, 0, 1);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(-0.7, 0, 1);
+            options.chassisConnectionPointLocal.set(-1, 0, 1);
             vehicle.addWheel(options);
 
             vehicle.addToWorld(world);
@@ -148,6 +140,114 @@
                     // update wheel physics
                     wheelBodies[i].position.copy(t.position);
                     wheelBodies[i].quaternion.copy(t.quaternion);
+                    // wheel update visuals
+                    wheelVisuals[i].position.copy(t.position);
+                    wheelVisuals[i].quaternion.copy(t.quaternion);
+                }
+            });
+        }
+
+        function createCar() {
+            var options = {
+                radius: 0.5,
+                directionLocal: new CANNON.Vec3(0, -1, 0),
+                suspensionStiffness: 50,
+                suspensionRestLength: 1,
+                frictionSlip: 5,
+                dampingRelaxation: 2.3,
+                dampingCompression: 4.5,
+                maxSuspensionForce: 200000,
+                rollInfluence: 0.01,
+                axleLocal: new CANNON.Vec3(-1, 0, 0),
+                chassisConnectionPointLocal: new CANNON.Vec3(1, 1, 0),
+                maxSuspensionTravel: 0.25,
+                customSlidingRotationalSpeed: -30,
+                useCustomSlidingRotationalSpeed: true
+            };
+
+            groundMaterial = new CANNON.Material("groundMaterial");
+            wheelMaterial = new CANNON.Material("wheelMaterial");
+            var wheelGroundContactMaterial = window.wheelGroundContactMaterial = new CANNON.ContactMaterial(wheelMaterial, groundMaterial, {
+                friction: 0.3,
+                restitution: 2,
+                contactEquationStiffness: 1000
+            });
+            world.addContactMaterial(wheelGroundContactMaterial);
+
+            
+            // CREATE BODY (VISUAL)
+            geometry = new THREE.BoxGeometry(2, 2, 4);
+            material = new THREE.MeshLambertMaterial({ color: 0x655bf5});
+            var chassisMesh = new THREE.Mesh(geometry, material);
+            chassisMesh.castShadow = true;
+            chassisMesh.receiveShadow = true;
+            meshes.push(chassisMesh);
+            scene.add(chassisMesh);
+
+
+
+            // CREATE BODY (PHYSICS)
+            var chassisShape = new CANNON.Box(new CANNON.Vec3(1, 1, 2));
+            var chassisBody = new CANNON.Body({ mass: mass });
+            chassisBody.addShape(chassisShape);
+            chassisBody.position.set(0, 6, 0);
+            bodies.push(chassisBody);
+            world.addBody(chassisBody);
+            
+            // CREATE THE VEHICLE
+            vehicle = new CANNON.RaycastVehicle({
+                chassisBody: chassisBody,
+                indexRightAxis: 0, // x
+                indexUpAxis: 1, // y
+                indexForwardAxis: 2, // z
+            });
+
+            options.chassisConnectionPointLocal.set(1, 0, -1);
+            vehicle.addWheel(options);
+
+            options.chassisConnectionPointLocal.set(-1, 0, -1);
+            vehicle.addWheel(options);
+
+            options.chassisConnectionPointLocal.set(1, 0, 1);
+            vehicle.addWheel(options);
+
+            options.chassisConnectionPointLocal.set(-1, 0, 1);
+            vehicle.addWheel(options);
+
+            vehicle.addToWorld(world);
+
+
+            var wheelBodies = [], wheelVisuals = [];
+            // CREATE WHEEL-BODY
+            for (var i = 0; i < vehicle.wheelInfos.length; i++) {
+
+                var wheel = vehicle.wheelInfos[i];
+                // CREATE WHEEL-BODY (VISUAL)
+                geometry = new THREE.CylinderGeometry(wheel.radius, wheel.radius, wheel.radius / 2, 20);
+                material = new THREE.MeshPhongMaterial({ color: 0x000000 });
+                var wheelMesh = new THREE.Mesh(geometry, material);
+
+                wheelMesh.geometry.rotateZ(Math.PI / 2);
+                wheelMesh.castShadow = true;
+                wheelMesh.receiveShadow = true;
+                wheelVisuals.push(wheelMesh);
+                scene.add(wheelMesh);
+
+                var wheelShape = new CANNON.Cylinder(wheel.radius, wheel.radius, wheel.radius / 2, 20);
+                var wheelBody = new CANNON.Body({ mass: 1 });
+                var q = new CANNON.Quaternion();
+                q.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+                wheelBody.addShape(wheelShape, new CANNON.Vec3(), q);
+                wheelBody.collisionFilterGroup = 0;
+                wheelBodies.push(wheelBody);
+                bodies.push(wheelBody);
+                world.addBody(wheelBody);
+            }
+
+            world.addEventListener('postStep', function () {
+                for (var i = 0; i < vehicle.wheelInfos.length; i++) {
+                    vehicle.updateWheelTransform(i);
+                    var t = vehicle.wheelInfos[i].worldTransform;
                     // wheel update visuals
                     wheelVisuals[i].position.copy(t.position);
                     wheelVisuals[i].quaternion.copy(t.quaternion);
@@ -238,12 +338,10 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-
-
         document.onkeydown = handler;
         document.onkeyup = handler;
         var maxSteerVal = 0.3;
-        var maxForce = 800;
+        var maxForce = 1500;
         var brakeForce = 1000000;
 
         function handler(event) {
@@ -293,7 +391,8 @@
         setupPhysics();
         setupGraphics();
         createPlane();
-        createRayCast();
+        // createRayCast();
+        createCar();
         sync();
         animate();
 
