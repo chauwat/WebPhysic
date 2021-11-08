@@ -980,6 +980,7 @@ CANNON.Demo.prototype.shape2mesh = function(body){
 
     for (var l = 0; l < body.shapes.length; l++) {
         var shape = body.shapes[l];
+        console.log(shape.data);
 
         var mesh;
 
@@ -1019,7 +1020,7 @@ CANNON.Demo.prototype.shape2mesh = function(body){
 
         case CANNON.Shape.types.CONVEXPOLYHEDRON:
             var geo = new THREE.Geometry();
-
+            console.log(23);
             // Add vertices
             for (var i = 0; i < shape.vertices.length; i++) {
                 var v = shape.vertices[i];
