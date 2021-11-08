@@ -168,16 +168,17 @@
         // ===============================================> EXPORT
 
         function exportAndGo() {
-            let data = lineData[0];
-            if (!data) return;
+            if (!lineData[0]) return;
+            let y_max = Math.max(...lineData[0].map(p => p.y));
+            let x_min = Math.min(...lineData[0].map(p => p.x));
 
-            let y_max = Math.max(...data.map(p => p.y));
-            data = data.map(p => ({ ...p, y: y_max - p.y }));
-            let x_min = Math.min(...data.map(p => p.x));
-            data = data.map(p => ({ ...p, x: p.x - x_min }));
+            for (let i = 0; i < lineData.length; i++) {
+                lineData[i] = lineData[i].map(p => ({ x: p.x - x_min, y: y_max - p.y }));
+                // lineData[i] = lineData[i].map(p => ({ ...p, x: p.x - x_min }));
+            }
 
-            console.log(data);
-            localStorage.setItem('data', JSON.stringify(data));
+            // console.log(lineData);
+            localStorage.setItem('data', JSON.stringify(lineData));
             window.location.href = '/simulator.html';
         }
     </script>
