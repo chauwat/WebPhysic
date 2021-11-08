@@ -199,9 +199,9 @@
                     e.stopPropagation();
                     // return false;
                 }
-            
+
                 if (actions.switchCam) {
-                    const totalView = 2;
+                    const totalView = 1;
                     cameraView = ++cameraView > totalView ? 0 : cameraView;
                 }
                 // console.log(cameraView);
@@ -217,7 +217,7 @@
             // addPyramid();
             // addBox();
             create3DShape(loadDataPoints(), 50);
-            addHitBox({ x: 0, y: 8, z: 0 }, 0 , 1 ,1 , true);
+            addHitBox({ x: 0, y: 8, z: 0 }, 0, 1, 1, true);
             createRayCast();
         }
 
@@ -259,7 +259,7 @@
 
             // Visual
             // const ground = new THREE.BoxGeometry(500, 500, 2);
-            const ground = new THREE.PlaneGeometry(100, 100, 4, 4);
+            const ground = new THREE.PlaneGeometry(10000, 100, 4, 4);
             const ground_material = new THREE.MeshStandardMaterial({ color: 0xccf0cc });
             const ground_mesh = new THREE.Mesh(ground, ground_material);
             ground_mesh.castShadow = true;
@@ -354,10 +354,7 @@
             meshes.push(mesh);
 
             syncs.push(() => {
-                // console.log(phyBody.force);
-                debugInfo.innerHTML = `x: ${phyBody.position.x}<br>y: ${phyBody.position.y}<br>z: ${phyBody.position.z}`;
-
-                if (cameraView == 0) {
+                if (cameraView == 1) {
                     let delta = new THREE.Vector3(phyBody.position.x - mesh.position.x, phyBody.position.y - mesh.position.y, phyBody.position.z - mesh.position.z);
                     cameraTracking(delta, phyBody.position);
                 }
@@ -365,17 +362,14 @@
                 mesh.position.copy(phyBody.position);
                 mesh.quaternion.copy(phyBody.quaternion);
                 const centerInWorldCoords = phyBody.pointToWorldFrame(new CANNON.Vec3());
-
                 if (actions.ballForward) {
                     phyBody.applyForce(new CANNON.Vec3(100, 0, 0), centerInWorldCoords);
-                }
-                if (actions.ballBackward) {
+                } else if (actions.ballBackward) {
                     phyBody.applyForce(new CANNON.Vec3(-100, 0, 0), centerInWorldCoords);
                 }
                 if (actions.ballLeft) {
                     phyBody.applyForce(new CANNON.Vec3(0, 0, -100), centerInWorldCoords);
-                }
-                if (actions.ballRight) {
+                } else if (actions.ballRight) {
                     phyBody.applyForce(new CANNON.Vec3(0, 0, 100), centerInWorldCoords);
                 }
             });
@@ -420,12 +414,12 @@
             function calcLength(posA, posB) {
                 return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
             }
-            
+
             function calcRotation(posA, posB) {
                 return Math.atan((posA.y - posB.y) / (posA.x - posB.x))
             }
-            
-            const xOffset = 15;
+
+            const xOffset = 5;
             const group = new THREE.Group();
             let path = new THREE.ShapePath();
             for (let i = 0; i < points.length; i++) {
@@ -439,7 +433,7 @@
                     let length = calcLength(point, nxtPoint);
                     let rad = calcRotation(point, nxtPoint);
                     let pos = {};
-                    for (let key in point) { 
+                    for (let key in point) {
                         pos[key] = (point[key] + nxtPoint[key]) / 2 + (key == 'x' ? xOffset : 0);
                     }
                     // console.log(point, nxtPoint, calcLength(point, nxtPoint), calcRotation(point, nxtPoint));
@@ -469,11 +463,13 @@
         }
 
         function createRayCast(mass = 500) {
+            const chassisSize = [10, 2, 5];
+            const wheelRadius = 1;
             var options = {
-                radius: 2.5,
+                radius: wheelRadius,
                 directionLocal: new CANNON.Vec3(0, -1, 0),
                 suspensionStiffness: 45,
-                suspensionRestLength: 2,
+                suspensionRestLength: chassisSize[1] / 2 - wheelRadius / 4,
                 frictionSlip: 10,
                 dampingRelaxation: 2.3,
                 dampingCompression: 4.5,
@@ -496,7 +492,7 @@
             world.addContactMaterial(wheelGroundContactMaterial);
 
             // CREATE CHASSIS PHYSICS
-            var chassisShape = new CANNON.Box(new CANNON.Vec3(12, 2, 6));
+            var chassisShape = new CANNON.Box(new CANNON.Vec3(...chassisSize.map(x => x / 2)));
             var chassisBody = new CANNON.Body({ mass });
             chassisBody.addShape(chassisShape);
             chassisBody.position.set(40, 10, 0);
@@ -504,7 +500,7 @@
             world.addBody(chassisBody);
 
             // CREATE CHASSIS (VISUAL)
-            var geometry = new THREE.BoxGeometry(24, 4, 12);
+            var geometry = new THREE.BoxGeometry(...chassisSize);
             var material = new THREE.MeshLambertMaterial({ color: 0x655bf5 });
             var chassisMesh = new THREE.Mesh(geometry, material);
             chassisMesh.castShadow = true;
@@ -513,7 +509,8 @@
             scene.add(chassisMesh);
 
             syncs.push(() => {
-                if (cameraView == 1) {
+                if (cameraView == 0) {
+                    debugInfo.innerHTML = `x: ${chassisBody.position.x}<br>y: ${chassisBody.position.y}<br>z: ${chassisBody.position.z}`;
                     let delta = new THREE.Vector3(chassisBody.position.x - chassisMesh.position.x, chassisBody.position.y - chassisMesh.position.y, chassisBody.position.z - chassisMesh.position.z);
                     cameraTracking(delta, chassisBody.position);
                 }
@@ -529,16 +526,16 @@
                 indexForwardAxis: 0, // z
             });
 
-            options.chassisConnectionPointLocal.set(-6, 0, 6);
+            options.chassisConnectionPointLocal.set(-chassisSize[0] / 3, 0, chassisSize[2] / 2);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(6, 0, 6);
+            options.chassisConnectionPointLocal.set(chassisSize[0] / 3, 0, chassisSize[2] / 2);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(-6, 0, -6);
+            options.chassisConnectionPointLocal.set(-chassisSize[0] / 3, 0, -chassisSize[2] / 2);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(6, 0, -6);
+            options.chassisConnectionPointLocal.set(chassisSize[0] / 3, 0, -chassisSize[2] / 2);
             vehicle.addWheel(options);
 
             vehicle.addToWorld(world);
