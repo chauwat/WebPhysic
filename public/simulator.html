@@ -18,6 +18,9 @@
             position: absolute;
             bottom: 0px;
             padding: 0 5px;
+            font-family: Lucida Console;
+            pointer-events: none;
+            user-select: none;
         }
     </style>
 </head>
@@ -26,7 +29,7 @@
     <div id="info">
         <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - orbit controls
     </div>
-    <div id="physic-info">0.0 km/h</div>
+    <div id="physic-info"></div>
 
     <script src="./build/cannon.js"></script>
 
@@ -114,8 +117,8 @@
 
         function setScene() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xccccc0);
-            scene.fog = new THREE.FogExp2(0xcccccc, 0.001);
+            scene.background = new THREE.Color(0xbbdefb);
+            // scene.fog = new THREE.FogExp2(0xcccccc, 0.001);
         }
 
         function setRenderer() {
@@ -204,7 +207,6 @@
                     const totalView = 1;
                     cameraView = ++cameraView > totalView ? 0 : cameraView;
                 }
-                // console.log(cameraView);
             }
 
             window.addEventListener('keydown', keydown);
@@ -213,11 +215,11 @@
 
         function setWorld() {
             addGruond();
-            // addSphere();
+            addSphere();
             // addPyramid();
             // addBox();
-            create3DShape(loadDataPoints(), 50);
-            addHitBox({ x: 0, y: 8, z: 0 }, 0, 1, 1, true);
+            buildRoad();
+            // addHitBox({ x: 0, y: 8, z: 0 }, 0, 1, 1, true);
             createRayCast();
         }
 
@@ -230,6 +232,29 @@
             debugInfo = document.getElementById('physic-info');
         }
 
+        function cameraTracking(delta, pos) {
+            camera.position.add(delta)
+            controls.target.copy(pos);
+        }
+
+        function displayPhysicInfo(info) {
+            const unit = { Position: 'm', Velocity: 'm/s', Acceleration: 'm/s^2' }
+            debugInfo.innerHTML = '';
+            for (let key in info) {
+                let values = info[key];
+                if (Array.isArray(values))
+                    debugInfo.innerHTML += `${key}: ${values.map(_v => {
+                        let av = Math.abs(_v).toFixed(2);
+                        let r = `000${av}`.substr(av.length - 4);
+                        if (_v >= 0) r = `+${r}`;
+                        else r = `-${r}`;
+                        return r;
+                    })} ${unit[key]}<br>`;
+                else
+                    debugInfo.innerHTML += `${key}: ${values}<br>`;
+            }
+        }
+
         function loadDataPoints() {
             let _data = localStorage.getItem('data');
             if (!_data) return [];
@@ -237,9 +262,11 @@
             return data || [];
         }
 
-        function cameraTracking(delta, pos) {
-            camera.position.add(delta)
-            controls.target.copy(pos);
+        function buildRoad() {
+            let dataPoints = loadDataPoints();
+            for (let i = 0; i < dataPoints.length; i++) {
+                create3DShape(dataPoints[i]);
+            }
         }
 
         // ====================================================================> World's Object
@@ -301,12 +328,11 @@
             });
         }
 
-        function addBox({ x, y, z } = { x: 0, y: 8, z: 1 }) {
-            let size = { x: 5, y: .2, z: 2 };
+        function addBox({ x, y, z } = { x: 0, y: 8, z: 1 }, size = { x: 5, y: .2, z: 2 }, color = 0xaaccaa, mass = 10) {
             var phyMaterial = new CANNON.Material();
             var phyShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.5, size.y * 0.5, size.z * 0.5));
             var phyBody = new CANNON.Body({
-                mass: 10,
+                mass,
                 material: phyMaterial,
                 position: new CANNON.Vec3(x, y, z),
             });
@@ -315,7 +341,7 @@
             bodies.push(phyBody);
 
             let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-            const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, wireframe: false });
+            const material = new THREE.MeshPhongMaterial({ color, flatShading: true, wireframe: false });
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(x, y, z);
             mesh.castShadow = true;
@@ -336,7 +362,7 @@
             var phyMaterial = new CANNON.Material();
             var phyShape = new CANNON.Sphere(r);
             var phyBody = new CANNON.Body({
-                mass: 1,
+                mass: 5,
                 material: phyMaterial,
                 position: new CANNON.Vec3(x, y, z),
             });
@@ -358,6 +384,14 @@
                     let delta = new THREE.Vector3(phyBody.position.x - mesh.position.x, phyBody.position.y - mesh.position.y, phyBody.position.z - mesh.position.z);
                     cameraTracking(delta, phyBody.position);
                 }
+                // let Acceleration = [];
+                // let dt = (new Date() - preTimestamp) / 1000;
+                // if (dt > .1) {
+                //     for (let i = 0; i < 3; i++) Acceleration[i] = (phyBody.velocity.toArray()[i] - preVelocity[i]) / dt;
+                //     displayPhysicInfo({ Position: phyBody.position, Velocity: phyBody.velocity, Acceleration });
+                //     preTimestamp = new Date();
+                //     preVelocity = [...phyBody.velocity.toArray()];
+                // }
 
                 mesh.position.copy(phyBody.position);
                 mesh.quaternion.copy(phyBody.quaternion);
@@ -410,7 +444,7 @@
             return sphere;
         }
 
-        function create3DShape(points, width = 10, depth = 2, color = 0xffffff, debug = false) {
+        function create3DShape(points, width = 20, depth = 2, color = 0xffffff, debug = false) {
             function calcLength(posA, posB) {
                 return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
             }
@@ -433,9 +467,8 @@
                     let length = calcLength(point, nxtPoint);
                     let rad = calcRotation(point, nxtPoint);
                     let pos = {};
-                    for (let key in point) {
-                        pos[key] = (point[key] + nxtPoint[key]) / 2 + (key == 'x' ? xOffset : 0);
-                    }
+                    // addBox(point, { x: 5, y: .1, z: 2 }, 0xffcc33, 0)
+                    for (let key in point) pos[key] = (point[key] + nxtPoint[key]) / 2 + (key == 'x' ? xOffset : 0);
                     // console.log(point, nxtPoint, calcLength(point, nxtPoint), calcRotation(point, nxtPoint));
                     addHitBox(pos, rad, length, width, debug)
                 }
@@ -462,8 +495,15 @@
             scene.add(group);
         }
 
+        function calc3D2Abs({ x, y, z }) {
+            return Math.sqrt(x * x + y * y + z * z);
+        }
+
+        var preVelocity = [0, 0, 0];
+        var preTimestamp = new Date();
         function createRayCast(mass = 500) {
-            const chassisSize = [10, 2, 5];
+            const carPosition = [40, 20, 0];
+            const chassisSize = [8, 2, 5];
             const wheelRadius = 1;
             var options = {
                 radius: wheelRadius,
@@ -495,7 +535,7 @@
             var chassisShape = new CANNON.Box(new CANNON.Vec3(...chassisSize.map(x => x / 2)));
             var chassisBody = new CANNON.Body({ mass });
             chassisBody.addShape(chassisShape);
-            chassisBody.position.set(40, 10, 0);
+            chassisBody.position.set(...carPosition);
             bodies.push(chassisBody);
             world.addBody(chassisBody);
 
@@ -509,8 +549,16 @@
             scene.add(chassisMesh);
 
             syncs.push(() => {
+                let Acceleration = [];
+                let dt = (new Date() - preTimestamp) / 1000;
+                if (dt > .1) {
+                    for (let i = 0; i < 3; i++) Acceleration[i] = (chassisBody.velocity.toArray()[i] - preVelocity[i]) / dt;
+                    displayPhysicInfo({ Position: chassisBody.position.toArray(), Velocity: chassisBody.velocity.toArray(), Acceleration });
+                    preTimestamp = new Date();
+                    preVelocity = [...chassisBody.velocity.toArray()];
+                }
+
                 if (cameraView == 0) {
-                    debugInfo.innerHTML = `x: ${chassisBody.position.x}<br>y: ${chassisBody.position.y}<br>z: ${chassisBody.position.z}`;
                     let delta = new THREE.Vector3(chassisBody.position.x - chassisMesh.position.x, chassisBody.position.y - chassisMesh.position.y, chassisBody.position.z - chassisMesh.position.z);
                     cameraTracking(delta, chassisBody.position);
                 }
@@ -526,16 +574,16 @@
                 indexForwardAxis: 0, // z
             });
 
-            options.chassisConnectionPointLocal.set(-chassisSize[0] / 3, 0, chassisSize[2] / 2);
+            options.chassisConnectionPointLocal.set(-(chassisSize[0] / 2 - wheelRadius * 1.25), 0, chassisSize[2] / 2);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(chassisSize[0] / 3, 0, chassisSize[2] / 2);
+            options.chassisConnectionPointLocal.set((chassisSize[0] / 2 - wheelRadius * 1.25), 0, chassisSize[2] / 2);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(-chassisSize[0] / 3, 0, -chassisSize[2] / 2);
+            options.chassisConnectionPointLocal.set(-(chassisSize[0] / 2 - wheelRadius * 1.25), 0, -chassisSize[2] / 2);
             vehicle.addWheel(options);
 
-            options.chassisConnectionPointLocal.set(chassisSize[0] / 3, 0, -chassisSize[2] / 2);
+            options.chassisConnectionPointLocal.set((chassisSize[0] / 2 - wheelRadius * 1.25), 0, -chassisSize[2] / 2);
             vehicle.addWheel(options);
 
             vehicle.addToWorld(world);
@@ -583,7 +631,7 @@
 
         // ===================================================================================> Car Control
 
-        function carHandler(maxForce = 2000, maxSteerVal = 0.6, brakeForce = 1000000) {
+        function carHandler(maxForce = 2000, maxSteerVal = 0.6, brakeForce = 200) {
             vehicle.setBrake(0, 0);
             vehicle.setBrake(0, 1);
             vehicle.setBrake(0, 2);
@@ -612,9 +660,9 @@
 
             if (actions.carBrake) {
                 vehicle.setBrake(brakeForce, 0);
-                vehicle.setBrake(brakeForce, 1);
+                vehicle.setBrake(brakeForce / 8, 1);
                 vehicle.setBrake(brakeForce, 2);
-                vehicle.setBrake(brakeForce, 3);
+                vehicle.setBrake(brakeForce / 8, 3);
             }
         }
 
