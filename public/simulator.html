@@ -201,10 +201,10 @@
                 }
             
                 if (actions.switchCam) {
-                    const totalView = 1;
-                    cameraView = ++cameraView > 1 ? 0 : cameraView;
+                    const totalView = 2;
+                    cameraView = ++cameraView > totalView ? 0 : cameraView;
                 }
-                console.log(cameraView);
+                // console.log(cameraView);
             }
 
             window.addEventListener('keydown', keydown);
@@ -354,6 +354,7 @@
             meshes.push(mesh);
 
             syncs.push(() => {
+                console.log(phyBody.force);
                 debugInfo.innerHTML = `x: ${phyBody.position.x}<br>y: ${phyBody.position.y}<br>z: ${phyBody.position.z}`;
 
                 if (cameraView == 0) {
