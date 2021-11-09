@@ -132,12 +132,13 @@
         <h2>Game Setting</h2>
         <section>
             <button class="btn" onclick="setDisplayPhysicInfo()">Toggle Physic Info</button>
-            <button class="btn" onclick="toggleVecAccDisplayMode(this)">Switch Velocity, Acceleration Display Mode</button>
+            <button class="btn" onclick="toggleVecAccDisplayMode(this)">Switch Velocity, Acceleration Display
+                Mode</button>
         </section>
     </div>
 
     <div id="info">
-        Arrow : Up / Down / Left / Right to Control <br>
+        Arrow : Up / Down / Left / Right to Control, B to Brake <br>
         SpaceBar to Lock / Unlock Camera
     </div>
 
@@ -194,8 +195,22 @@
         var syncs = [];
         var cameraView = 0;
 
+        // ======================================================> GamePlay Global Variable
+
         var enablePhysic = true;
         var vec_acc_type = 0;
+        var carDetail = {
+            chassisColor: 0xfec89a,
+            wheelColor: 0x000000,
+            chassisSize: [8, 2, 5],
+            wheelRadius: 1,
+            mass: 500,
+            maxForce: 2000
+        }
+        var finishLine = { position: [], radius: 1 };
+
+        // ======================================================
+
 
         initPhysic();
         init();
@@ -349,7 +364,8 @@
             // addBox();
             // addHitBox({ x: 0, y: 8, z: 0 }, 0, 1, 1, true);
             buildRoad();
-            createRayCast();
+            carDetail = loadCarDetail() || carDetail;
+            createRayCast(carDetail);
         }
 
         function setGUI() {
@@ -402,6 +418,12 @@
             for (let i = 0; i < dataPoints.length; i++) {
                 create3DShape(dataPoints[i]);
             }
+        }
+
+        function loadCarDetail() {
+            let _carDetail = localStorage.getItem('carDetail');
+            if (!_carDetail) return;
+            return JSON.parse(_carDetail);
         }
 
         // ====================================================================> World's Object
@@ -626,10 +648,10 @@
 
         var preVelocity = [0, 0, 0];
         var preTimestamp = new Date();
-        function createRayCast(mass = 500) {
+        function createRayCast({ chassisColor, wheelColor, mass, chassisSize, wheelRadius }) {
             const carPosition = [20, 20, 0];
-            const chassisSize = [8, 2, 5];
-            const wheelRadius = 1;
+            // const chassisSize = [8, 2, 5];
+            // const wheelRadius = 1;
             var options = {
                 radius: wheelRadius,
                 directionLocal: new CANNON.Vec3(0, -1, 0),
@@ -665,7 +687,7 @@
 
             // CREATE CHASSIS (VISUAL)
             var geometry = new THREE.BoxGeometry(...chassisSize);
-            var material = new THREE.MeshLambertMaterial({ color: 0xfec89a });
+            var material = new THREE.MeshLambertMaterial({ color: chassisColor });
             var chassisMesh = new THREE.Mesh(geometry, material);
             chassisMesh.castShadow = true;
             chassisMesh.receiveShadow = true;
@@ -723,7 +745,7 @@
                 var wheel = vehicle.wheelInfos[i];
                 // CREATE WHEEL-BODY (VISUAL)
                 geometry = new THREE.CylinderGeometry(wheel.radius, wheel.radius, wheel.radius / 2, 20);
-                material = new THREE.MeshPhongMaterial({ color: 0x432818 });
+                material = new THREE.MeshPhongMaterial({ color: wheelColor });
                 var wheelMesh = new THREE.Mesh(geometry, material);
 
                 wheelMesh.geometry.rotateX(Math.PI / 2);
@@ -766,7 +788,7 @@
 
         // ===================================================================================> Car Control
 
-        function carHandler(maxForce = 2000, maxSteerVal = 0.6, brakeForce = 200) {
+        function carHandler(maxForce = carDetail.maxForce, maxSteerVal = 0.6, brakeForce = 200) {
             vehicle.setBrake(0, 0);
             vehicle.setBrake(0, 1);
             vehicle.setBrake(0, 2);
