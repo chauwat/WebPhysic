@@ -313,7 +313,7 @@
         }
 
         function saveAndExport({ chassisColor, wheelColor, chassisSize, wheelRadius, mass, maxForce }) {
-            var carDetail = { chassisColor, wheelColor, chassisSize, wheelRadius, mass, maxForce };
+            var carDetail = { chassisColor, wheelColor, chassisSize, wheelRadius, mass, maxForce : maxForce/4 };
             console.log(carDetail);
             
             localStorage.setItem('carDetail', JSON.stringify(carDetail));
@@ -340,7 +340,7 @@
             <p class="text">Engine-force : 8,000 N</p>
             <br>
             <div class="text-center">
-                <button onclick="saveAndExport({ chassisColor: 0xfec89a , wheelColor: 0xEED6C4, chassisSize:[8,2,5], wheelRadius: 1, mass: 500, maxForce: 8000/4 })" class="btselect">SELECT</button>
+                <button onclick="saveAndExport({ chassisColor: 0xfec89a , wheelColor: 0xEED6C4, chassisSize:[8,2,5], wheelRadius: 1, mass: 500, maxForce: 8000 })" class="btselect">SELECT</button>
             </div>
 
         </div>
@@ -349,11 +349,11 @@
             <h2 style="text-align: center;">Truck</h2>
             <p class="text">Chassis-Size : <br> L = 12 , W = 5 , H = 5</p>
             <p class="text">Wheel-radius : 2.2 m</p>
-            <p class="text">Mass : 1000 kg</p>
+            <p class="text">Mass : 2,000 kg</p>
             <p class="text">Engine-force : 10,000 N</p>
             <br>
             <div class="text-center">
-                <button onclick="saveAndExport({ chassisColor: 0xfffff8 , wheelColor: 0x000000, chassisSize:[12,5,5], wheelRadius: 2.2, mass: 1000, maxForce: 10000/4 })" class="btselect">SELECT</button>
+                <button onclick="saveAndExport({ chassisColor: 0xfffff8 , wheelColor: 0x000000, chassisSize:[12,5,5], wheelRadius: 2.2, mass: 2000, maxForce: 10000 })" class="btselect">SELECT</button>
             </div>
         </div>
 
