@@ -695,7 +695,7 @@
 
             syncs.push(() => {
                 let dt = (new Date() - preTimestamp) / 1000;
-                if (dt > .1) {
+                if (dt > .05) {
                     let absVelocity = calc3D2Abs(chassisBody.velocity);
                     let acceleration = [];
                     for (let i = 0; i < 3; i++) acceleration[i] = (chassisBody.velocity.toArray()[i] - preVelocity[i]) / dt;
