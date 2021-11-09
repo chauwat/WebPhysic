@@ -153,7 +153,7 @@
             var chassisMesh = new THREE.Mesh(geometry, material);
             chassisMesh.castShadow = true;
             chassisMesh.receiveShadow = true;
-            chassisMesh.position.set(0, 0, chassisSize[2]/2 + radius);
+            chassisMesh.position.set(0, 0, chassisSize[2] / 2 + radius);
             scene.add(chassisMesh);
 
             function gen_wheel(...pos) {
@@ -191,7 +191,7 @@
         }
 
         // create Custom model
-        function init_custom(chassisSize = [8, 5, 2] , radius=1) {
+        function init_custom(chassisSize = [8, 5, 2], radius = 1) {
             var container = document.getElementById('custom');
             var scene = new THREE.Scene();
             scene.background = new THREE.Color(0xbbdefb);
@@ -236,14 +236,14 @@
             var group = new THREE.Group();
 
 
-            var geometry = new THREE.BoxGeometry(chassisSize[0] , chassisSize[1] , chassisSize[2]);
+            var geometry = new THREE.BoxGeometry(chassisSize[0], chassisSize[1], chassisSize[2]);
             var material = new THREE.MeshLambertMaterial({ color: 0xC56183 });
             var chassisMesh = new THREE.Mesh(geometry, material);
             chassisMesh.castShadow = true;
             chassisMesh.receiveShadow = true;
-            chassisMesh.position.set(0, 0, chassisSize[2]/2 + radius);
+            chassisMesh.position.set(0, 0, chassisSize[2] / 2 + radius);
             // chassisMesh.position.set(0, 0, 2 + radius);
-            
+
             group.add(chassisMesh);
 
             function gen_wheel(...pos) {
@@ -289,17 +289,37 @@
     </script>
 
     <script>
-        function sendrender(){
+        var customcar = {};
+        function sendrender() {
             var length = document.getElementById("length").value;
             var width = document.getElementById("width").value;
             var height = document.getElementById("height").value;
             var radius = document.getElementById("radius").value;
+            var mass = document.getElementById("mass").value;
+            var force = document.getElementById("force").value;
 
-            if (length && height && width){ 
-                init_custom([ parseFloat(length) , parseFloat(width) , parseFloat(height) ], parseFloat(radius) || 1);
+            if (length && height && width) {
+                length = parseFloat(length);
+                width = parseFloat(width);
+                height = parseFloat(height);
+                radius = parseFloat(radius) || 1;
+                mass = parseFloat(mass) || 1;
+                force = parseFloat(force) || 1;
+
+                init_custom([length, width, height], radius);
+                customcar = { chassisColor: 0xC56183 , wheelColor: 0x483434, chassisSize:[length,height,width], wheelRadius: radius, mass: mass, maxForce: force };
             }
-            console.log(1);
+            // console.log(1);
         }
+
+        function saveAndExport({ chassisColor, wheelColor, chassisSize, wheelRadius, mass, maxForce }) {
+            var carDetail = { chassisColor, wheelColor, chassisSize, wheelRadius, mass, maxForce };
+            console.log(carDetail);
+            
+            localStorage.setItem('carDetail', JSON.stringify(carDetail));
+            window.location.href = '/simulator.html';
+        }
+
     </script>
 
     <!----------------- THREE JS -------------------->
@@ -320,7 +340,7 @@
             <p class="text">Engine-force : 8,000 N</p>
             <br>
             <div class="text-center">
-                <button class="btselect">SELECT</button>
+                <button onclick="saveAndExport({ chassisColor: 0xccf0cc , wheelColor: 0xEED6C4, chassisSize:[8,5,2], wheelRadius: 1, mass: 500, maxForce: 8000 })" class="btselect">SELECT</button>
             </div>
 
         </div>
@@ -333,13 +353,13 @@
             <p class="text">Engine-force : 10,000 N</p>
             <br>
             <div class="text-center">
-                <button class="btselect">SELECT</button>
+                <button onclick="saveAndExport({ chassisColor: 0xfffff8 , wheelColor: 0x000000, chassisSize:[12,5,5], wheelRadius: 2.2, mass: 1200, maxForce: 10000 })" class="btselect">SELECT</button>
             </div>
         </div>
 
         <div class="info">
             <h2 style="text-align: center;">( CUSTOM )</h2>
-            <form onchange="sendrender()" class="custom-form">
+            <form onsubmit="sendrender()" onchange="sendrender()" class="custom-form">
                 <input type="number" id="length" placeholder="Length"><br><br>
                 <input type="number" id="width" placeholder="Width"><br><br>
                 <input type="number" id="height" placeholder="Height"><br><br>
@@ -348,7 +368,8 @@
                 <input type="number" id="force" placeholder="Engine-force"><br><br>
             </form>
             <div class="text-center">
-                <button class="btselect">SELECT</button>
+                <button onclick="saveAndExport(customcar)" class="btselect">SELECT</button>
+
             </div>
         </div>
 
