@@ -111,7 +111,9 @@
 
     <script>
         var customcar = {};
+        
         function sendrender() {
+            const customButton = document.getElementById('custom-btn');
             var length = document.getElementById("length").value;
             var width = document.getElementById("width").value;
             var height = document.getElementById("height").value;
@@ -129,6 +131,7 @@
 
                 init_visal({ containerId: 'custom', chassisSize: [length, width, height], radius, chassisColor: 0xC56183, wheelColor: 0x483434 });
                 customcar = { chassisColor: 0xC56183, wheelColor: 0x483434, chassisSize: [length, height, width], wheelRadius: radius, mass: mass, maxForce: force };
+                customButton.disabled = false;
             }
         }
 
@@ -192,7 +195,7 @@
                 <input type="number" id="force" placeholder="Engine-force"><br><br>
             </form>
             <div class="text-center">
-                <button onclick="saveAndExport(customcar)" class="btselect">SELECT</button>
+                <button id="custom-btn" disabled onclick="saveAndExport(customcar)" class="btselect">SELECT</button>
             </div>
         </div>
 
