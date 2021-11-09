@@ -6,10 +6,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Mitr">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css"
+        integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p" crossorigin="anonymous" />
     <style>
-        body {
-            background-color: #ccc;
-            color: #000;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            font-family: "Mitr", sans-serif;
         }
 
         #physic-info {
@@ -22,18 +26,131 @@
             pointer-events: none;
             user-select: none;
         }
+
+        .label {
+            color: #FFF;
+            font-family: sans-serif;
+            padding: 2px;
+            background: rgba(0, 0, 0, .6);
+        }
+
+        .menu {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+        }
+
+        .menu-btn {
+            padding: 6px 12px;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0);
+            border: 1px solid grey;
+            border-radius: 5px;
+        }
+
+        .menu-btn:hover {
+            background: rgba(0, 0, 0, .1);
+        }
+
+        .menu-btn:active {
+            background: rgba(0, 0, 0, .2);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            text-align: center;
+            border-radius: 3px;
+            text-decoration: none;
+            text-transform: none;
+            color: black;
+            padding: 2px 8px;
+            background: rgba(255, 255, 255, .7);
+            outline: none;
+            border: 0;
+            line-height: 20px;
+            margin: 4px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .menu-container {
+            padding: 16px 32px 32px 32px;
+            background: rgba(0, 0, 0, .8);
+            width: 80%;
+            border-radius: 3px;
+
+            position: absolute;
+            width: 500px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+
+            display: none;
+        }
+
+        .menu-container h1,
+        .menu-container h2 {
+            color: white;
+            margin: 16px 0;
+        }
+
+        .menu-container>.close-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
     </style>
 </head>
 
 <body>
-    <div id="info">
-        <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - orbit controls
+    <div class="menu">
+        <button class="menu-btn" onclick="toggleMenu()">
+            <i class="fa fa-bars"></i>
+        </button>
     </div>
+
+    <div class="menu-container text-center" id="menu-container">
+        <button class="close-btn" onclick="toggleMenu()">
+            <i class="fa fa-times"></i>
+        </button>
+
+        <h1>Menu</h1>
+        <section>
+            <button class="btn">Restart Game</button>
+            <a href="/map-drawing.html" class="btn">Go to Map-Drawing</a>
+            <a href="/select.html" class="btn">Choose My Car</a>
+        </section>
+
+        <hr style="margin: 8px 0;">
+
+        <h2>Game Setting</h2>
+        <section>
+            <button class="btn" onclick="setDisplayPhysicInfo()">Toggle Physic Info</button>
+            <button class="btn" onclick="toggleVecAccDisplayMode(this)">Switch Velocity, Acceleration Display
+                Mode</button>
+        </section>
+    </div>
+
+    <div id="info">
+        Arrow : Up / Down / Left / Right to Control, B to Brake <br>
+        SpaceBar to Lock / Unlock Camera
+    </div>
+
     <div id="physic-info"></div>
 
-    <script src="./build/cannon.js"></script>
+    <!-- ================================================================================================================= Script -->
 
+    <script src="./build/cannon.js"></script>
     <script type="module">
+        // const urlSearchParams = new URLSearchParams(window.location.search);
+        // const params = Object.fromEntries(urlSearchParams.entries());
+
         function printEuler(euler) {
             console.log(euler._x * 180 / Math.PI, euler._y * 180 / Math.PI, euler._z * 180 / Math.PI);
         }
@@ -44,10 +161,16 @@
             return quat;
         }
 
+        function calc3D2Abs(ret) {
+            let { x, y, z } = Array.isArray(ret) ? { x: ret[0], y: ret[1], z: ret[2] } : ret;
+            return Math.sqrt(x * x + y * y + z * z);
+        }
+
         import * as THREE from './build/three.module.js';
         import { OrbitControls } from './jsm/controls/OrbitControls.js';
         import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
         import { GUI } from './jsm/libs/dat.gui.module.js';
+        // import { CSS2DRenderer, CSS2DObject } from './jsm/renderers/CSS2DRenderer.js';
         const loader = new GLTFLoader();
 
         var debugInfo;
@@ -66,12 +189,28 @@
         };
         var actions = {};
 
-        let scene, camera, controls, renderer;
+        let scene, camera, controls, renderer, labelRenderer;
         var world, vehicle;
-        var enablePhysic = true;
         var bodies = [], meshes = [];
         var syncs = [];
         var cameraView = 0;
+
+        // ======================================================> GamePlay Global Variable
+
+        var enablePhysic = true;
+        var vec_acc_type = 0;
+        var carDetail = {
+            chassisColor: 0xfec89a,
+            wheelColor: 0x000000,
+            chassisSize: [8, 2, 5],
+            wheelRadius: 1,
+            mass: 500,
+            maxForce: 2000
+        }
+        var finishLine = { position: [], radius: 1 };
+
+        // ======================================================
+
 
         initPhysic();
         init();
@@ -101,15 +240,12 @@
 
         function render() {
             renderer.render(scene, camera);
+            // labelRenderer.render(scene, camera);
         }
 
         function updateVisuals() {
             const timeStep = 1 / 60;
             world.step(timeStep);
-            // for (var i = 0; i !== meshes.length; i++) {
-            // 	meshes[i].position.copy(bodies[i].position);
-            // 	meshes[i].quaternion.copy(bodies[i].quaternion);
-            // }
             for (var i = 0; i < syncs.length; i++) syncs[i]();
         }
 
@@ -128,8 +264,16 @@
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
+
+            // labelRenderer = new CSS2DRenderer();
+            // labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            // labelRenderer.domElement.style.position = 'absolute';
+            // labelRenderer.domElement.style.top = '0px';
+            // document.body.appendChild(labelRenderer.domElement);
+
             window.addEventListener('resize', () => {
                 renderer.setSize(window.innerWidth, window.innerHeight);
+                // labelRenderer.setSize(window.innerWidth, window.innerHeight);
             });
         }
 
@@ -215,19 +359,20 @@
 
         function setWorld() {
             addGruond();
-            addSphere();
-            // addPyramid();
+            addPyramid();
+            // addSphere();
             // addBox();
-            buildRoad();
             // addHitBox({ x: 0, y: 8, z: 0 }, 0, 1, 1, true);
-            createRayCast();
+            buildRoad();
+            carDetail = loadCarDetail() || carDetail;
+            createRayCast(carDetail);
         }
 
         function setGUI() {
-            const gui = new GUI();
-            const config = { enablePhysic: false };
-            const matChanger = (value) => { enablePhysic = config.enablePhysic; };
-            gui.add(config, 'enablePhysic', false).onChange(matChanger);
+            // const gui = new GUI();
+            // const config = { enablePhysic: false };
+            // const matChanger = (value) => { enablePhysic = config.enablePhysic; };
+            // gui.add(config, 'enablePhysic', false).onChange(matChanger);
 
             debugInfo = document.getElementById('physic-info');
         }
@@ -237,21 +382,27 @@
             controls.target.copy(pos);
         }
 
+        function formatNumber(_v, size = 4) {
+            let absV = Math.abs(_v).toFixed(2);
+            // console.log(absV, absV.length - 3 > size);
+            let r = `0000${absV}`.substr(absV.length - size + 1);
+            if (_v >= 0) r = `+${r}`;
+            else r = `-${r}`;
+            return r;
+        }
+
         function displayPhysicInfo(info) {
-            const unit = { Position: 'm', Velocity: 'm/s', Acceleration: 'm/s^2' }
+            const unit = { position: 'm', absVelocity: 'm/s', absAcceleration: 'm/s^2', velocity: 'm/s', acceleration: 'm/s^2' };
+            const label = { position: 'Position', absVelocity: '|Velocity|', absAcceleration: '|Acceleration|', velocity: 'Velocity', acceleration: 'Acceleration' };
+
             debugInfo.innerHTML = '';
             for (let key in info) {
-                let values = info[key];
+                let values = info[key] || 0;
+                debugInfo.innerHTML += `${label[key]}: `
                 if (Array.isArray(values))
-                    debugInfo.innerHTML += `${key}: ${values.map(_v => {
-                        let av = Math.abs(_v).toFixed(2);
-                        let r = `000${av}`.substr(av.length - 4);
-                        if (_v >= 0) r = `+${r}`;
-                        else r = `-${r}`;
-                        return r;
-                    })} ${unit[key]}<br>`;
+                    debugInfo.innerHTML += `${values.map(_v => ' ' + formatNumber(_v))} ${unit[key]}<br>`;
                 else
-                    debugInfo.innerHTML += `${key}: ${values}<br>`;
+                    debugInfo.innerHTML += `${formatNumber(values)} ${unit[key]}<br>`;
             }
         }
 
@@ -269,6 +420,12 @@
             }
         }
 
+        function loadCarDetail() {
+            let _carDetail = localStorage.getItem('carDetail');
+            if (!_carDetail) return;
+            return JSON.parse(_carDetail);
+        }
+
         // ====================================================================> World's Object
 
         function addGruond() {
@@ -282,17 +439,15 @@
             });
             groundBody.addShape(groundShape);
             world.addBody(groundBody);
-            bodies.push(groundBody);
 
             // Visual
             // const ground = new THREE.BoxGeometry(500, 500, 2);
-            const ground = new THREE.PlaneGeometry(10000, 100, 4, 4);
+            const ground = new THREE.PlaneGeometry(10000, 200, 4, 4);
             const ground_material = new THREE.MeshStandardMaterial({ color: 0xccf0cc });
             const ground_mesh = new THREE.Mesh(ground, ground_material);
             ground_mesh.castShadow = true;
             ground_mesh.receiveShadow = true;
             scene.add(ground_mesh);
-            meshes.push(ground_mesh);
 
             syncs.push(() => {
                 ground_mesh.position.copy(groundBody.position);
@@ -300,27 +455,25 @@
             });
         }
 
-        function addPyramid({ x, y, z } = { x: 0, y: 3, z: 10 }) {
+        function addPyramid({ x, y, z } = { x: 0, y: 5, z: 0 }) {
             var pyramidMaterial = new CANNON.Material();
-            var pyramidShape = new CANNON.Cylinder(0.01, 1, 5, 4, 1);
+            var pyramidShape = new CANNON.Cylinder(0.01, 4, 10, 4, 1);
             var pyramidBody = new CANNON.Body({
                 mass: 10,
                 material: pyramidMaterial,
                 position: new CANNON.Vec3(x, y, z),
-                quaternion: CANNON_deg2quat(45, 0, 0) // new CANNON.Quaternion(0, 0, 0, 1)
+                quaternion: CANNON_deg2quat(0, 0, 0) // new CANNON.Quaternion(0, 0, 0, 1)
             });
             pyramidBody.addShape(pyramidShape, null, CANNON_deg2quat(-90, 0, 0));
             world.addBody(pyramidBody);
-            bodies.push(pyramidBody);
 
-            const geometry = new THREE.CylinderGeometry(0.01, 1, 5, 4, 1);
+            const geometry = new THREE.CylinderGeometry(0.01, 4, 10, 4, 1);
             const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, wireframe: false });
             const pyramid_mesh = new THREE.Mesh(geometry, material);
             pyramid_mesh.position.set(x, y, z);
             pyramid_mesh.castShadow = true;
             pyramid_mesh.receiveShadow = true;
             scene.add(pyramid_mesh);
-            meshes.push(pyramid_mesh);
 
             syncs.push(() => {
                 pyramid_mesh.position.copy(pyramidBody.position);
@@ -338,7 +491,6 @@
             });
             phyBody.addShape(phyShape, null);
             world.addBody(phyBody);
-            bodies.push(phyBody);
 
             let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
             const material = new THREE.MeshPhongMaterial({ color, flatShading: true, wireframe: false });
@@ -347,7 +499,6 @@
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             scene.add(mesh);
-            meshes.push(mesh);
 
             syncs.push(() => {
                 mesh.position.copy(phyBody.position);
@@ -368,7 +519,6 @@
             });
             phyBody.addShape(phyShape, null);
             world.addBody(phyBody);
-            bodies.push(phyBody);
 
             let geometry = new THREE.SphereGeometry(r, 12, 12);
             const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, wireframe: true });
@@ -377,21 +527,12 @@
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             scene.add(mesh);
-            meshes.push(mesh);
 
             syncs.push(() => {
                 if (cameraView == 1) {
                     let delta = new THREE.Vector3(phyBody.position.x - mesh.position.x, phyBody.position.y - mesh.position.y, phyBody.position.z - mesh.position.z);
                     cameraTracking(delta, phyBody.position);
                 }
-                // let Acceleration = [];
-                // let dt = (new Date() - preTimestamp) / 1000;
-                // if (dt > .1) {
-                //     for (let i = 0; i < 3; i++) Acceleration[i] = (phyBody.velocity.toArray()[i] - preVelocity[i]) / dt;
-                //     displayPhysicInfo({ Position: phyBody.position, Velocity: phyBody.velocity, Acceleration });
-                //     preTimestamp = new Date();
-                //     preVelocity = [...phyBody.velocity.toArray()];
-                // }
 
                 mesh.position.copy(phyBody.position);
                 mesh.quaternion.copy(phyBody.quaternion);
@@ -409,6 +550,17 @@
             });
         }
 
+        function genVisualBoxMesh(pos, size, rad, color, debug = false) {
+            let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+            const material = new THREE.MeshPhongMaterial({ color, flatShading: true, wireframe: debug });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(pos.x, pos.y, pos.z);
+            mesh.rotation.z = rad;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            return mesh;
+        }
+
         function addHitBox({ x, y, z } = { x: 0, y: 8, z: 1 }, rad = 0, length = 1, width = 1, debug = false) {
             let size = { x: length, y: 1, z: width };
             var phyMaterial = new CANNON.Material();
@@ -423,32 +575,26 @@
             world.addBody(phyBody);
 
             if (debug) {
-                let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-                const material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, wireframe: true });
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.set(x, y, z);
+                let mesh = genVisualBoxMesh({ x, y, z }, size, 0, 0xffffff, true);
                 mesh.position.copy(phyBody.position);
                 mesh.quaternion.copy(phyBody.quaternion);
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
                 scene.add(mesh);
             }
         }
 
         function createDebugSphere(pos, color = 0xff3366) {
             // pos is [x, y, z]
-            const geometry = new THREE.SphereGeometry(2, 16, 16);
+            const geometry = new THREE.SphereGeometry(1, 16, 16);
             const material = new THREE.MeshBasicMaterial({ color, wireframe: true });
             const sphere = new THREE.Mesh(geometry, material);
             sphere.position.set(...pos)
             return sphere;
         }
 
-        function create3DShape(points, width = 20, depth = 2, color = 0xffffff, debug = false) {
+        function create3DShape(points, width = 40, depth = 2, color = 0x727272, debug = false) {
             function calcLength(posA, posB) {
                 return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
             }
-
             function calcRotation(posA, posB) {
                 return Math.atan((posA.y - posB.y) / (posA.x - posB.x))
             }
@@ -462,15 +608,19 @@
                 else path.lineTo(point.x, point.y);
                 if (debug) group.add(createDebugSphere([point.x + xOffset, point.y, 0]));
 
+                // Create Physics Hitbox
                 if (i != points.length - 1) {
                     let nxtPoint = points[i + 1];
                     let length = calcLength(point, nxtPoint);
                     let rad = calcRotation(point, nxtPoint);
                     let pos = {};
-                    // addBox(point, { x: 5, y: .1, z: 2 }, 0xffcc33, 0)
                     for (let key in point) pos[key] = (point[key] + nxtPoint[key]) / 2 + (key == 'x' ? xOffset : 0);
-                    // console.log(point, nxtPoint, calcLength(point, nxtPoint), calcRotation(point, nxtPoint));
                     addHitBox(pos, rad, length, width, debug)
+
+                    if (i % 2) {
+                        let mesh = genVisualBoxMesh(pos, { x: 6, y: .1, z: 2 }, rad, 0xffcc33);
+                        scene.add(mesh);
+                    }
                 }
             }
 
@@ -480,6 +630,7 @@
                 else path.lineTo(point.x, point.y - depth);
             }
 
+            // Create Visual Shape
             let simpleShapes = path.toShapes(true);
             let shape3d = new THREE.ExtrudeGeometry(simpleShapes[0], { depth: width, bevelEnabled: false });
             const material = new THREE.MeshPhongMaterial({ color, flatShading: true, wireframe: false });
@@ -495,16 +646,12 @@
             scene.add(group);
         }
 
-        function calc3D2Abs({ x, y, z }) {
-            return Math.sqrt(x * x + y * y + z * z);
-        }
-
         var preVelocity = [0, 0, 0];
         var preTimestamp = new Date();
-        function createRayCast(mass = 500) {
-            const carPosition = [40, 20, 0];
-            const chassisSize = [8, 2, 5];
-            const wheelRadius = 1;
+        function createRayCast({ chassisColor, wheelColor, mass, chassisSize, wheelRadius }) {
+            const carPosition = [20, 20, 0];
+            // const chassisSize = [8, 2, 5];
+            // const wheelRadius = 1;
             var options = {
                 radius: wheelRadius,
                 directionLocal: new CANNON.Vec3(0, -1, 0),
@@ -536,26 +683,29 @@
             var chassisBody = new CANNON.Body({ mass });
             chassisBody.addShape(chassisShape);
             chassisBody.position.set(...carPosition);
-            bodies.push(chassisBody);
             world.addBody(chassisBody);
 
             // CREATE CHASSIS (VISUAL)
             var geometry = new THREE.BoxGeometry(...chassisSize);
-            var material = new THREE.MeshLambertMaterial({ color: 0x655bf5 });
+            var material = new THREE.MeshLambertMaterial({ color: chassisColor });
             var chassisMesh = new THREE.Mesh(geometry, material);
             chassisMesh.castShadow = true;
             chassisMesh.receiveShadow = true;
-            meshes.push(chassisMesh);
             scene.add(chassisMesh);
 
             syncs.push(() => {
-                let Acceleration = [];
                 let dt = (new Date() - preTimestamp) / 1000;
                 if (dt > .1) {
-                    for (let i = 0; i < 3; i++) Acceleration[i] = (chassisBody.velocity.toArray()[i] - preVelocity[i]) / dt;
-                    displayPhysicInfo({ Position: chassisBody.position.toArray(), Velocity: chassisBody.velocity.toArray(), Acceleration });
+                    let absVelocity = calc3D2Abs(chassisBody.velocity);
+                    let acceleration = [];
+                    for (let i = 0; i < 3; i++) acceleration[i] = (chassisBody.velocity.toArray()[i] - preVelocity[i]) / dt;
+                    if (vec_acc_type) {
+                        displayPhysicInfo({ position: chassisBody.position.toArray(), velocity: chassisBody.velocity.toArray(), acceleration });
+                    } else {
+                        displayPhysicInfo({ position: chassisBody.position.toArray(), absVelocity, absAcceleration: calc3D2Abs(acceleration) });
+                    }
                     preTimestamp = new Date();
-                    preVelocity = [...chassisBody.velocity.toArray()];
+                    preVelocity = chassisBody.velocity.toArray();
                 }
 
                 if (cameraView == 0) {
@@ -595,7 +745,7 @@
                 var wheel = vehicle.wheelInfos[i];
                 // CREATE WHEEL-BODY (VISUAL)
                 geometry = new THREE.CylinderGeometry(wheel.radius, wheel.radius, wheel.radius / 2, 20);
-                material = new THREE.MeshPhongMaterial({ color: 0x000000 });
+                material = new THREE.MeshPhongMaterial({ color: wheelColor });
                 var wheelMesh = new THREE.Mesh(geometry, material);
 
                 wheelMesh.geometry.rotateX(Math.PI / 2);
@@ -611,9 +761,16 @@
                 wheelBody.addShape(wheelShape, new CANNON.Vec3(), q);
                 wheelBody.collisionFilterGroup = 0;
                 wheelBodies.push(wheelBody);
-                // bodies.push(wheelBody);
                 world.addBody(wheelBody);
             }
+
+            // const speedDiv = document.createElement('div');
+            // speedDiv.className = 'label';
+            // speedDiv.textContent = 'Moon';
+            // speedDiv.style.marginTop = '-1em';
+            // const speedLabel = new CSS2DObject(speedDiv);
+            // speedLabel.position.set(0, 3, 0);
+            // chassisMesh.add(speedLabel);
 
             syncs.push(() => {
                 for (var i = 0; i < vehicle.wheelInfos.length; i++) {
@@ -631,7 +788,7 @@
 
         // ===================================================================================> Car Control
 
-        function carHandler(maxForce = 2000, maxSteerVal = 0.6, brakeForce = 200) {
+        function carHandler(maxForce = carDetail.maxForce, maxSteerVal = 0.6, brakeForce = 200) {
             vehicle.setBrake(0, 0);
             vehicle.setBrake(0, 1);
             vehicle.setBrake(0, 2);
@@ -666,7 +823,44 @@
             }
         }
 
-        syncs.push(carHandler)
+        syncs.push(carHandler);
+
+        // ===================================================================================> Export (Public) Function
+        window.setPhysic = function (on) {
+            enablePhysic = on;
+        }
+
+        window.setDisplayPhysicInfo = function (show = debugInfo.style.display) {
+            debugInfo.style.display = show ? null : 'none';
+            return show;
+        }
+
+        window.setVecAccDisplayMode = function (mode = vec_acc_type + 1) {
+            const max_type = 1;
+            if (mode > max_type) mode = 0;
+            return vec_acc_type = mode;
+        }
+    </script>
+
+    <script>
+        // HTML, UI Contoller
+        const menuContainer = document.getElementById('menu-container')
+
+        function toggleMenu() {
+            menuContainer.style.display = menuContainer.style.display ? null : 'block';
+            setPhysic(!menuContainer.style.display);
+        }
+
+        function toggleVecAccDisplayMode(e) {
+            let mode = setVecAccDisplayMode();
+            e.innerHTML = `Switch Velocity, Acceleration Display Mode (Now: ${mode ? 'Vector' : 'Scalar'})`;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code == 'Escape') {
+                toggleMenu();
+            }
+        });
     </script>
 </body>
 
