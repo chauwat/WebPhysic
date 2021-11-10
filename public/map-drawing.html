@@ -14,12 +14,16 @@
             border: 1px dashed #ACC;
         }
 
-        .next-btn {
-            position: fixed;
-            bottom: 12px;
+        .btn-container {
+            position: absolute;
+            /* bottom: 12px; */
             left: 50%;
             transform: translateX(-50%);
+        }
 
+        .next-btn {
+            position: relative;
+            margin: 0 4px;
             background-color: #4CAF50;
             border: none;
             color: white;
@@ -47,10 +51,13 @@
 </head>
 
 <body onload="main()">
-    <button onclick="exportAndGo()" class="next-btn" id="next-btn">Next</button>
+    <div class="btn-container" id="btn-container">
+        <button onclick="exportAndGo(-1)" class="next-btn">Back to Game</button>
+        <button onclick="exportAndGo()" class="next-btn">Select Car</button>
+    </div>
 
     <div class="container">
-        <svg width="720" height="480" viewBox="0 0 720 480" xmlns="http://www.w3.org/2000/svg" id="paper">
+        <svg width="720" height="360" viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" id="paper">
         </svg>
     </div>
 
@@ -58,11 +65,12 @@
 
     <script lang="js">
         var paper, paperViewBoxWidth;
-        var button;
+        var buttonGroup;
         var isMouseDown = false;
         var prevPoint = {};
         var lineCount = -1;
         var lineData = [];
+        var basePoint = {};
 
         function main() {
             paper = document.getElementById('paper');
@@ -71,9 +79,12 @@
             paper.addEventListener('mouseup', onMouseUp);
             paper.addEventListener('mousemove', onMouseMove);
             paper.addEventListener('mouseleave', onMouseUp);
+            document.body.addEventListener('touchstart', onMouseDown);
+            document.body.addEventListener('touchend', onMouseUp);
+            document.body.addEventListener('touchmove', e => onMouseMove(e.touches && e.touches[0]));
             document.addEventListener('keydown', onKeyDown);
 
-            button = document.getElementById('next-btn');
+            buttonGroup = document.getElementById('btn-container');
             hideNextButton();
         }
 
@@ -112,10 +123,18 @@
 
         function addLine(x, y) {
             if ((Math.abs(x - prevPoint.x) + Math.abs(y - prevPoint.y)) <= 20) return;
+            if (basePoint.x && (x < basePoint.x || y > basePoint.y)) {
+                return;
+            }
 
             drawLine(mapPoint({ x, y }), !prevPoint.x);
-            if (!prevPoint.x) lineData.push([{ x, y }]);
-            else lineData[lineData.length - 1].push({ x, y });
+            if (!prevPoint.x) {
+                // New Line
+                if (lineData.length == 0) basePoint = { x, y };
+                lineData.push([{ x, y }]);
+            } else {
+                lineData[lineData.length - 1].push({ x, y });
+            }
 
             if (lineCount >= 0) showNextButton();
             prevPoint = { x, y };
@@ -134,11 +153,11 @@
         }
 
         function hideNextButton() {
-            button.style.display = 'none';
+            buttonGroup.style.display = 'none';
         }
 
         function showNextButton() {
-            button.style.display = null;
+            buttonGroup.style.display = null;
         }
 
         // ===============================================> USER INPUT
@@ -167,7 +186,7 @@
 
         // ===============================================> EXPORT
 
-        function exportAndGo() {
+        function exportAndGo(to = 0) {
             if (!lineData[0]) return;
             let y_max = Math.max(...lineData[0].map(p => p.y));
             let x_min = Math.min(...lineData[0].map(p => p.x));
@@ -179,7 +198,7 @@
 
             // console.log(lineData);
             localStorage.setItem('data', JSON.stringify(lineData));
-            window.location.href = '/select.html';
+            window.location.href = (to === 0) ? '/select.html' : '/simulator.html';
         }
     </script>
 </body>
