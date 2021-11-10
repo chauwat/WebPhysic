@@ -120,6 +120,7 @@
             var radius = document.getElementById("radius").value;
             var mass = document.getElementById("mass").value;
             var force = document.getElementById("force").value;
+            console.log(length, width);
 
             if (length || height || width) {
                 length = parseFloat(length) || 2;
@@ -136,6 +137,9 @@
         }
 
         function saveAndExport({ chassisColor, wheelColor, chassisSize, wheelRadius, mass, maxForce }) {
+            // Clear Form
+            document.getElementById('custom-form').reset();
+
             var carDetail = { chassisColor, wheelColor, chassisSize, wheelRadius, mass, maxForce: maxForce / 4 };
             console.log(carDetail);
 
@@ -186,7 +190,7 @@
 
         <div class="info">
             <h2 style="text-align: center;">( CUSTOM )</h2>
-            <form onsubmit="sendrender()" onchange="sendrender()" class="custom-form">
+            <form onsubmit="sendrender()" onchange="sendrender()" class="custom-form" id="custom-form">
                 <input type="number" id="length" placeholder="Length"><br><br>
                 <input type="number" id="width" placeholder="Width"><br><br>
                 <input type="number" id="height" placeholder="Height"><br><br>
