@@ -475,8 +475,9 @@
             // addHitBox({ x: 0, y: 8, z: 0 }, 0, 1, 1, true);
             addGruond();
 
-            addBox({ x: -10, y: 8, z: -10 }, { x: 1, y: 1, z: 1 }, 10);
-            addBox({ x: -10, y: 8, z: -20 }, { x: 10, y: 10, z: 10 }, 100);
+            addBox({ x: -10, y: 15, z: -10 }, { x: 1, y: 1, z: 1 }, 10);
+            addBox({ x: -10, y: 15, z: -20 }, { x: 5, y: 5, z: 5 }, 100);
+            addBox({ x: -30, y: 15, z: 30 }, { x: 20, y: 20, z: 20 }, 500, 0x33113a);
             addPyramid();
             buildRoad();
             carDetail = { ...carDetail, ...loadCarDetail() };
