@@ -303,6 +303,7 @@
 
         // ======================================================> GamePlay Global Variable
 
+        var showDebug = false;
         var enablePhysic = true;
         var vec_acc_type = 0;
         var cameraFollowObject = true;
@@ -471,10 +472,11 @@
 
         function setWorld() {
             // addSphere();
-            addBox();
             // addHitBox({ x: 0, y: 8, z: 0 }, 0, 1, 1, true);
-
             addGruond();
+
+            addBox({ x: -10, y: 8, z: -10 }, { x: 1, y: 1, z: 1 }, 10);
+            addBox({ x: -10, y: 8, z: -20 }, { x: 10, y: 10, z: 10 }, 100);
             addPyramid();
             buildRoad();
             carDetail = { ...carDetail, ...loadCarDetail() };
@@ -579,7 +581,7 @@
             var pyramidMaterial = new CANNON.Material();
             var pyramidShape = new CANNON.Cylinder(0.01, 4, 10, 4, 1);
             var pyramidBody = new CANNON.Body({
-                mass: 10,
+                mass: 50,
                 material: pyramidMaterial,
                 position: new CANNON.Vec3(x, y, z),
                 quaternion: CANNON_deg2quat(0, 0, 0) // new CANNON.Quaternion(0, 0, 0, 1)
@@ -601,7 +603,7 @@
             });
         }
 
-        function addBox({ x, y, z } = { x: -10, y: 8, z: -10 }, size = { x: 2, y: 2, z: 2 }, color = 0xaaaaff, mass = 10) {
+        function addBox({ x, y, z } = { x: -10, y: 8, z: -10 }, size = { x: 2, y: 2, z: 2 }, mass = 10, color = 0xaaaaff) {
             var phyMaterial = new CANNON.Material();
             var phyShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.5, size.y * 0.5, size.z * 0.5));
             var phyBody = new CANNON.Body({
@@ -711,7 +713,7 @@
             return sphere;
         }
 
-        function create3DShape(points, width = 20, depth = 2, color = 0x727272, debug = false) {
+        function create3DShape(points, width = 20, depth = 2, color = 0x727272, debug = true) {
             function calcLength(posA, posB) {
                 return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
             }
@@ -739,7 +741,7 @@
 
                     if (i % 2) {
                         // Add Road Center Line
-                        let mesh = genVisualBoxMesh(pos, { x: 6, y: .1, z: 1 }, rad, 0xffcc33);
+                        let mesh = genVisualBoxMesh(pos, { x: 6, y: .1, z: .5 }, rad, 0xffcc33);
                         scene.add(mesh);
                     }
                 }
