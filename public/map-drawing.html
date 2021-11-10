@@ -132,7 +132,7 @@
             }
 
             drawLine(mapPoint({ x, y }), !prevPoint.x);
-            if (!prevPoint.x) {
+            if (prevPoint.x === undefined) {
                 // New Line
                 if (lineData.length == 0) basePoint = { x, y };
                 lineData.push([{ x, y }]);
@@ -209,9 +209,11 @@
 
         function chooseMap(key) {
             let map = maps[key];
+            let y_offset = paper.clientHeight;
+            console.log(y_offset);
             for (let i = 0; i < map.length; i++) {
                 for (let j = 0; j < map[i].length; j++) {
-                    addLine(map[i][j].x, 720 - map[i][j].y);
+                    addLine(map[i][j].x, y_offset - map[i][j].y);
                 }
                 prevPoint = {};
             }
