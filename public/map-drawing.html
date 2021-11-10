@@ -21,7 +21,7 @@
             transform: translateX(-50%);
         }
 
-        .next-btn {
+        .btn {
             position: relative;
             margin: 0 4px;
             background-color: #4CAF50;
@@ -33,7 +33,7 @@
             box-shadow: 2px 2px 4px rgba(0, 0, 0, .3);
         }
 
-        .next-btn:hover::after {
+        .btn:hover::after {
             content: " ";
             position: absolute;
             left: 0;
@@ -44,7 +44,7 @@
             opacity: .1;
         }
 
-        .next-btn:active::after {
+        .btn:active::after {
             opacity: .2;
         }
     </style>
@@ -52,13 +52,17 @@
 
 <body onload="main()">
     <div class="btn-container" id="btn-container">
-        <button onclick="exportAndGo(-1)" class="next-btn">Back to Game</button>
-        <button onclick="exportAndGo()" class="next-btn">Select Car</button>
+        <button onclick="exportAndGo(-1)" class="btn">Back to Game</button>
+        <button onclick="exportAndGo()" class="btn">Select Car</button>
     </div>
 
     <div class="container">
         <svg width="720" height="360" viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" id="paper">
         </svg>
+    </div>
+
+    <div>
+        <button class="btn" onclick="chooseMap('basic')">Use Example Map</button>
     </div>
 
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.0/anime.min.js"></script> -->
@@ -199,6 +203,24 @@
             // console.log(lineData);
             localStorage.setItem('data', JSON.stringify(lineData));
             window.location.href = (to === 0) ? '/select.html' : '/simulator.html';
+        }
+
+        // ==================================================> Choose Maps
+
+        function chooseMap(key) {
+            let map = maps[key];
+            for (let i = 0; i < map.length; i++) {
+                for (let j = 0; j < map[i].length; j++) {
+                    addLine(map[i][j].x, 720 - map[i][j].y);
+                }
+                prevPoint = {};
+            }
+        }
+    </script>
+
+    <script>
+        var maps = {
+            basic: [[{ x: 0, y: 0 }, { x: 16, y: 14 }, { x: 34, y: 25 }, { x: 53, y: 31 }, { x: 74, y: 35 }, { x: 98, y: 35 }, { x: 126, y: 33 }, { x: 151, y: 38 }, { x: 182, y: 42 }, { x: 210, y: 46 }, { x: 232, y: 49 }, { x: 258, y: 56 }, { x: 282, y: 65 }, { x: 310, y: 77 }, { x: 332, y: 91 }, { x: 349, y: 112 }, { x: 370, y: 139 }, { x: 383, y: 150 }, { x: 398, y: 157 }, { x: 414, y: 166 }, { x: 435, y: 170 }, { x: 462, y: 170 }, { x: 486, y: 163 }, { x: 507, y: 154 }, { x: 531, y: 148 }, { x: 551, y: 147 }, { x: 578, y: 146 }, { x: 601, y: 147 }, { x: 624, y: 148 }, { x: 657, y: 152 }, { x: 690, y: 154 }, { x: 722, y: 156 }, { x: 744, y: 156 }, { x: 764, y: 155 }, { x: 786, y: 149 }, { x: 810, y: 145 }, { x: 841, y: 145 }, { x: 872, y: 145 }, { x: 898, y: 147 }, { x: 918, y: 151 }, { x: 940, y: 151 }, { x: 963, y: 151 }, { x: 990, y: 149 }, { x: 1014, y: 147 }, { x: 1042, y: 144 }, { x: 1065, y: 141 }, { x: 1090, y: 138 }, { x: 1110, y: 135 }, { x: 1130, y: 130 }, { x: 1148, y: 123 }, { x: 1164, y: 115 }, { x: 1187, y: 114 }, { x: 1212, y: 114 }, { x: 1231, y: 116 }, { x: 1248, y: 122 }, { x: 1266, y: 129 }], [{ x: 1263, y: 97 }, { x: 1286, y: 97 }, { x: 1314, y: 100 }, { x: 1346, y: 101 }, { x: 1369, y: 104 }, { x: 1386, y: 108 }, { x: 1402, y: 116 }, { x: 1415, y: 125 }, { x: 1422, y: 140 }]]
         }
     </script>
 </body>
