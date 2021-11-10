@@ -1,6 +1,7 @@
 <html>
 
 <head>
+    <title>Draw Road - Basic Mechanics</title>
     <style>
         .container {
             /* border: 1px dashed #CCCCCC; */
@@ -202,7 +203,7 @@
 
             // console.log(lineData);
             localStorage.setItem('data', JSON.stringify(lineData));
-            window.location.href = (to === 0) ? '/select.html' : '/simulator.html';
+            window.location.href = (to === 0) ? './select.html' : './simulator.html';
         }
 
         // ==================================================> Choose Maps

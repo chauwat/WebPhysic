@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>three.js webgl - orbit controls</title>
+    <title>Game Play - Basic Mechanics</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Mitr">
@@ -132,7 +132,7 @@
                 <input type="checkbox" id="checkbox-camFollow" value="true" checked>
             </div> -->
             <div class="d-flex">
-                <label class="text-nowrap">Camera POV : </label>
+                <label class="text-nowrap">Camera FOV : </label>
                 <span class="mx-2">30</span>
                 <input style="width: 100%;" type="range" min="30" max="120" value="60"
                     oninput="updateCameraFov(this.value)">
@@ -297,7 +297,7 @@
         var carDetail = {
             chassisColor: 0xfec89a,
             wheelColor: 0x000000,
-            chassisSize: [8, 2, 5],
+            chassisSize: [4, 1, 2.5],
             wheelRadius: 1,
             mass: 500,
             maxForce: 2000,
@@ -509,6 +509,7 @@
             const label = { position: 'Position', absVelocity: '|Velocity|', absAcceleration: '|Acceleration|', velocity: 'Velocity', acceleration: 'Acceleration' };
 
             debugInfo.innerHTML = ``;
+            if (actions.carBrake) debugInfo.innerHTML += `[Brake Force Applied]<br>`;
             for (let key in info) {
                 let values = info[key] || 0;
                 debugInfo.innerHTML += `${label[key]}: `
