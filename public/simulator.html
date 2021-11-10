@@ -199,15 +199,21 @@
 
         var enablePhysic = true;
         var vec_acc_type = 0;
+        var cameraFollowObject = true;
         var carDetail = {
             chassisColor: 0xfec89a,
             wheelColor: 0x000000,
             chassisSize: [8, 2, 5],
             wheelRadius: 1,
             mass: 500,
-            maxForce: 2000
+            maxForce: 2000,
+            brakeForce: 200
         }
-        var finishLine = { position: [], radius: 1 };
+        var finishLine = { position: [], radius: 10, isPassed: false };
+
+        // Changable In Setting
+        var worldGravity = 9.81;
+        var cameraFov = 60;
 
         // ======================================================
 
@@ -228,10 +234,10 @@
 
         function initPhysic() {
             world = new CANNON.World();
-            world.gravity.set(0, -9.81, 0);
+            world.gravity.set(0, -worldGravity, 0);
         }
 
-        function animate(millis) {
+        function animate() {
             requestAnimationFrame(animate);
             if (controls) controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
             if (enablePhysic) updateVisuals();
@@ -278,7 +284,7 @@
         }
 
         function setCamera() {
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+            camera = new THREE.PerspectiveCamera(cameraFov, window.innerWidth / window.innerHeight, 1, 1000);
             camera.position.set(-40, 30, 30);
             // camera.up.set(0, 0, 1);
             scene.add(camera);
@@ -302,17 +308,17 @@
 
             const dirLight3 = new THREE.DirectionalLight(0xfffff0, 0.4, 1);
             dirLight3.position.set(3, 12, 15);
-            dirLight3.castShadow = true;
-            dirLight3.shadow.camera.near = 0.1;
-            dirLight3.shadow.camera.far = 500;
-            dirLight3.shadow.camera.right = 32;
-            dirLight3.shadow.camera.left = - 32;
-            dirLight3.shadow.camera.top = 32;
-            dirLight3.shadow.camera.bottom = - 32;
-            dirLight3.shadow.mapSize.width = 512;
-            dirLight3.shadow.mapSize.height = 512;
-            dirLight3.shadow.radius = 4;
-            dirLight3.shadow.bias = - 0.0005;
+            // dirLight3.castShadow = true;
+            // dirLight3.shadow.camera.near = 0.1;
+            // dirLight3.shadow.camera.far = 500;
+            // dirLight3.shadow.camera.right = 32;
+            // dirLight3.shadow.camera.left = - 32;
+            // dirLight3.shadow.camera.top = 32;
+            // dirLight3.shadow.camera.bottom = - 32;
+            // dirLight3.shadow.mapSize.width = 512;
+            // dirLight3.shadow.mapSize.height = 512;
+            // dirLight3.shadow.radius = 4;
+            // dirLight3.shadow.bias = - 0.0005;
             scene.add(dirLight3);
         }
 
@@ -358,13 +364,14 @@
         }
 
         function setWorld() {
+            // addSphere();
+            addBox();
+            // addHitBox({ x: 0, y: 8, z: 0 }, 0, 1, 1, true);
+
             addGruond();
             addPyramid();
-            // addSphere();
-            // addBox();
-            // addHitBox({ x: 0, y: 8, z: 0 }, 0, 1, 1, true);
             buildRoad();
-            carDetail = loadCarDetail() || carDetail;
+            carDetail = { ...carDetail, ...loadCarDetail() };
             createRayCast(carDetail);
         }
 
@@ -378,7 +385,7 @@
         }
 
         function cameraTracking(delta, pos) {
-            camera.position.add(delta)
+            if (cameraFollowObject) camera.position.add(delta)
             controls.target.copy(pos);
         }
 
@@ -395,7 +402,7 @@
             const unit = { position: 'm', absVelocity: 'm/s', absAcceleration: 'm/s^2', velocity: 'm/s', acceleration: 'm/s^2' };
             const label = { position: 'Position', absVelocity: '|Velocity|', absAcceleration: '|Acceleration|', velocity: 'Velocity', acceleration: 'Acceleration' };
 
-            debugInfo.innerHTML = '';
+            debugInfo.innerHTML = `Mass: ${carDetail.mass} KG<br>Engine-force: ${carDetail.maxForce * 4} N<br>`;
             for (let key in info) {
                 let values = info[key] || 0;
                 debugInfo.innerHTML += `${label[key]}: `
@@ -417,12 +424,19 @@
             let dataPoints = loadDataPoints();
             for (let i = 0; i < dataPoints.length; i++) {
                 create3DShape(dataPoints[i]);
+                finishLine.position = dataPoints[i][dataPoints[i].length - 1];
             }
+
+            // Add Finish Box
+            finishLine.position = { ...finishLine.position, y: finishLine.position.y + finishLine.radius / 2, z: 0 }
+            let box = createDebugSphere(Object.values(finishLine.position), 0xccccff, finishLine.radius);
+            // let box = genVisualBoxMesh({ ...finishLine.position, z: 0 }, { x: 2, y: 12, z: finishLine.radius * 2 }, 0, 0xffffff, true);
+            scene.add(box);
         }
 
         function loadCarDetail() {
             let _carDetail = localStorage.getItem('carDetail');
-            if (!_carDetail) return;
+            if (!_carDetail) return {};
             return JSON.parse(_carDetail);
         }
 
@@ -455,7 +469,7 @@
             });
         }
 
-        function addPyramid({ x, y, z } = { x: 0, y: 5, z: 0 }) {
+        function addPyramid({ x, y, z } = { x: -20, y: 5, z: 0 }) {
             var pyramidMaterial = new CANNON.Material();
             var pyramidShape = new CANNON.Cylinder(0.01, 4, 10, 4, 1);
             var pyramidBody = new CANNON.Body({
@@ -481,7 +495,7 @@
             });
         }
 
-        function addBox({ x, y, z } = { x: 0, y: 8, z: 1 }, size = { x: 5, y: .2, z: 2 }, color = 0xaaccaa, mass = 10) {
+        function addBox({ x, y, z } = { x: -10, y: 8, z: -10 }, size = { x: 2, y: 2, z: 2 }, color = 0xaaaaff, mass = 10) {
             var phyMaterial = new CANNON.Material();
             var phyShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.5, size.y * 0.5, size.z * 0.5));
             var phyBody = new CANNON.Body({
@@ -550,7 +564,7 @@
             });
         }
 
-        function genVisualBoxMesh(pos, size, rad, color, debug = false) {
+        function genVisualBoxMesh(pos, size, rad = 0, color = 0xcccccc, debug = false) {
             let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
             const material = new THREE.MeshPhongMaterial({ color, flatShading: true, wireframe: debug });
             const mesh = new THREE.Mesh(geometry, material);
@@ -582,9 +596,9 @@
             }
         }
 
-        function createDebugSphere(pos, color = 0xff3366) {
+        function createDebugSphere(pos, color = 0xff3366, radius = 1) {
             // pos is [x, y, z]
-            const geometry = new THREE.SphereGeometry(1, 16, 16);
+            const geometry = new THREE.SphereGeometry(radius, 16, 16);
             const material = new THREE.MeshBasicMaterial({ color, wireframe: true });
             const sphere = new THREE.Mesh(geometry, material);
             sphere.position.set(...pos)
@@ -599,7 +613,7 @@
                 return Math.atan((posA.y - posB.y) / (posA.x - posB.x))
             }
 
-            const xOffset = 5;
+            const xOffset = 0;
             const group = new THREE.Group();
             let path = new THREE.ShapePath();
             for (let i = 0; i < points.length; i++) {
@@ -695,6 +709,7 @@
 
             syncs.push(() => {
                 let dt = (new Date() - preTimestamp) / 1000;
+                // Display Car's Physic Info
                 if (dt > .05) {
                     let absVelocity = calc3D2Abs(chassisBody.velocity);
                     let acceleration = [];
@@ -708,12 +723,14 @@
                     preVelocity = chassisBody.velocity.toArray();
                 }
 
+                // Lock Camera's View
                 if (cameraView == 0) {
                     let delta = new THREE.Vector3(chassisBody.position.x - chassisMesh.position.x, chassisBody.position.y - chassisMesh.position.y, chassisBody.position.z - chassisMesh.position.z);
                     cameraTracking(delta, chassisBody.position);
                 }
                 chassisMesh.position.copy(chassisBody.position);
                 chassisMesh.quaternion.copy(chassisBody.quaternion);
+                monitorCarPosition(chassisBody.position);
             });
 
             // CREATE THE VEHICLE
@@ -741,7 +758,6 @@
             var wheelBodies = [], wheelVisuals = [];
             // CREATE WHEEL-BODY
             for (var i = 0; i < vehicle.wheelInfos.length; i++) {
-
                 var wheel = vehicle.wheelInfos[i];
                 // CREATE WHEEL-BODY (VISUAL)
                 geometry = new THREE.CylinderGeometry(wheel.radius, wheel.radius, wheel.radius / 2, 20);
@@ -786,9 +802,9 @@
             })
         }
 
-        // ===================================================================================> Car Control
+        // ===================================================================================> Car Control / Finish Line
 
-        function carHandler(maxForce = carDetail.maxForce, maxSteerVal = 0.6, brakeForce = 200) {
+        function carHandler(maxForce = carDetail.maxForce, maxSteerVal = 0.6, brakeForce = carDetail.brakeForce) {
             vehicle.setBrake(0, 0);
             vehicle.setBrake(0, 1);
             vehicle.setBrake(0, 2);
@@ -825,7 +841,17 @@
 
         syncs.push(carHandler);
 
+        function monitorCarPosition(position) {
+            let diff = {};
+            for (let key of ['x', 'y', 'z']) diff[key] = position[key] - finishLine.position[key];
+            if (Math.abs(diff.x) + Math.abs(diff.y) < finishLine.radius) {
+                finishLine.isPassed = true;
+                cameraFollowObject = false;
+            }
+        }
+
         // ===================================================================================> Export (Public) Function
+
         window.setPhysic = function (on) {
             enablePhysic = on;
         }
