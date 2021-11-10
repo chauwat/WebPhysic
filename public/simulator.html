@@ -178,12 +178,19 @@
                 <button class="btn btn-sm btn-outline-light ms-2"
                     onclick="toggleVecAccDisplayMode(this)">Scalar</button>
             </div>
+
+            <div class="d-flex align-items-center mt-2">
+                <label class="text-nowrap">Show / Hide Hitbox Debug : </label>
+                <button class="btn btn-sm btn-outline-light ms-2" onclick="toggleDebug()">Toggle</button>
+                <span class="ms-2 fst-italic">(This will reload the page)</span>
+            </div>
         </section>
     </div>
 
     <!-- End Game -->
     <div class="abs-center popup-learn-physic shadow" id="learn-physic">
-        <button class="close-btn btn btn-sm btn-outline-danger" onclick="document.getElementById('learn-physic').style.display = null;">
+        <button class="close-btn btn btn-sm btn-outline-danger"
+            onclick="document.getElementById('learn-physic').style.display = null;">
             <i class="fa fa-times"></i>
         </button>
         <h3 class="text-primary text-opacity-75 text-center">Review Physic In The Game</h3>
@@ -303,7 +310,6 @@
 
         // ======================================================> GamePlay Global Variable
 
-        var showDebug = false;
         var enablePhysic = true;
         var vec_acc_type = 0;
         var cameraFollowObject = true;
@@ -321,6 +327,9 @@
         // Changable In Setting
         var worldGravity = 9.81;
         var cameraFov = 60;
+        var setting = {
+            debug: false,
+        }
 
         // ======================================================
 
@@ -330,6 +339,7 @@
         animate();
 
         function init() {
+            loadSetting();
             setScene();
             setRenderer();
             setCamera();
@@ -470,14 +480,20 @@
             window.addEventListener('keyup', keyup);
         }
 
+        function loadSetting() {
+            let _setting = localStorage.getItem('setting');
+            if (!_setting) return [];
+            setting = JSON.parse(_setting);
+        }
+
         function setWorld() {
             // addSphere();
             // addHitBox({ x: 0, y: 8, z: 0 }, 0, 1, 1, true);
             addGruond();
 
-            addBox({ x: -10, y: 15, z: -10 }, { x: 1, y: 1, z: 1 }, 10);
+            addBox({ x: -20, y: 15, z: -10 }, { x: 1, y: 1, z: 1 }, 10);
             addBox({ x: -10, y: 15, z: -20 }, { x: 5, y: 5, z: 5 }, 100);
-            addBox({ x: -30, y: 15, z: 30 }, { x: 20, y: 20, z: 20 }, 500, 0x33113a);
+            addBox({ x: -10, y: 15, z: 30 }, { x: 20, y: 20, z: 20 }, 500, 0x33113a);
             addPyramid();
             buildRoad();
             carDetail = { ...carDetail, ...loadCarDetail() };
@@ -714,7 +730,7 @@
             return sphere;
         }
 
-        function create3DShape(points, width = 20, depth = 2, color = 0x727272, debug = true) {
+        function create3DShape(points, width = 20, depth = 2, color = 0x727272, debug = setting.debug) {
             function calcLength(posA, posB) {
                 return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
             }
@@ -729,7 +745,7 @@
                 let point = points[i];
                 if (i == 0) path.moveTo(point.x, point.y);
                 else path.lineTo(point.x, point.y);
-                if (debug) group.add(createDebugSphere([point.x + xOffset, point.y, 0]));
+                // if (debug) group.add(createDebugSphere([point.x + xOffset, point.y, 0]));
 
                 // Create Physics Hitbox
                 if (i != points.length - 1) {
@@ -988,6 +1004,12 @@
         window.updateWorldGravity = function (g) {
             worldGravity = g;
             world.gravity.set(0, -worldGravity, 0)
+        }
+
+        window.toggleDebug = function () {
+            setting.debug = !setting.debug;
+            localStorage.setItem('setting', JSON.stringify(setting));
+            location.reload();
         }
     </script>
 
