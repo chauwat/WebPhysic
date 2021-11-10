@@ -110,11 +110,15 @@
         }
 
         .popup-learn-physic {
-            width: 80%;
+            max-height: 95%;
+            width: 70%;
+            min-width: 600px;
+            max-width: 1200px;
             padding: 8px;
             background: white;
-            z-index: 1;
+            z-index: 2;
             display: none;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -182,7 +186,7 @@
         <button class="close-btn btn btn-sm btn-outline-danger" onclick="document.getElementById('learn-physic').style.display = null;">
             <i class="fa fa-times"></i>
         </button>
-        <h3 class="text-primary text-opacity-75 text-center">Phyic In The Game</h3>
+        <h3 class="text-primary text-opacity-75 text-center">Review Physic In The Game</h3>
         <div id="carouselExampleCaptions" class="carousel slide" data-bs-ride="carousel" data-bs-interval="10000">
             <div class="carousel-indicators">
                 <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="0" class="active"
@@ -199,7 +203,7 @@
                     <img src="./img/static.jpg" class="d-block w-100">
                     <div class="carousel-caption d-none d-md-block">
                         <h5>Static</h5>
-                        <p>Brake the Car on a slop surface</p>
+                        <p>Brake the Car on a slope surface</p>
                     </div>
                 </div>
                 <div class="carousel-item">
