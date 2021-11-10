@@ -11,3 +11,4 @@
 # - unignore all files with an extension in the test folder
 
 **/node_modules
+**/.firebase

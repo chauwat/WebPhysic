@@ -391,7 +391,7 @@
 
         function setCamera() {
             camera = new THREE.PerspectiveCamera(cameraFov, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.set(-40, 30, 30);
+            camera.position.set(-10, 8, 8);
             // camera.up.set(0, 0, 1);
             scene.add(camera);
             window.addEventListener('resize', () => {
@@ -711,7 +711,7 @@
             return sphere;
         }
 
-        function create3DShape(points, width = 40, depth = 2, color = 0x727272, debug = false) {
+        function create3DShape(points, width = 20, depth = 2, color = 0x727272, debug = false) {
             function calcLength(posA, posB) {
                 return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
             }
@@ -770,7 +770,7 @@
         var preVelocity = [0, 0, 0];
         var preTimestamp = new Date();
         function createRayCast({ chassisColor, wheelColor, mass, chassisSize, wheelRadius }) {
-            const carPosition = [20, 30, 0];
+            const carPosition = [20, 20, 0];
             // const chassisSize = [8, 2, 5];
             // const wheelRadius = 1;
             var options = {
