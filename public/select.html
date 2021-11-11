@@ -10,13 +10,13 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Mitr">
 </head>
 
-<body style="max-width: 1600px; margin: 0 auto;">
+<body style="max-width: 1600px; margin: 0 auto;" onload="main()">
     <script type="module">
         import * as THREE from './build/three.module.js';
         import { OrbitControls } from './jsm/controls/OrbitControls.js';
 
         // create Custom model
-        function init_visal({ containerId, chassisSize, radius, chassisColor, wheelColor }) {
+        function init_visal({ containerId, chassisSize, wheelRadius, chassisColor, wheelColor }) {
             var container = document.getElementById(containerId);
             var scene = new THREE.Scene();
             scene.background = new THREE.Color(0xbbdefb);
@@ -63,11 +63,11 @@
             var chassisMesh = new THREE.Mesh(geometry, material);
             chassisMesh.castShadow = true;
             chassisMesh.receiveShadow = true;
-            chassisMesh.position.set(0, 0, chassisSize[2] / 2 + radius);
+            chassisMesh.position.set(0, 0, chassisSize[2] / 2 + wheelRadius);
             scene.add(chassisMesh);
 
             function gen_wheel(...pos) {
-                var geometry = new THREE.CylinderGeometry(radius, radius, radius / 2, 20);
+                var geometry = new THREE.CylinderGeometry(wheelRadius, wheelRadius, wheelRadius / 2, 20);
                 var material = new THREE.MeshPhongMaterial({ color: wheelColor });
                 var wheelMesh = new THREE.Mesh(geometry, material);
                 wheelMesh.geometry.rotateX(Math.PI);
@@ -76,10 +76,10 @@
                 wheelMesh.position.set(...pos);
                 scene.add(wheelMesh);
             }
-            gen_wheel(-(chassisSize[0] / 2 - radius * 1.25), chassisSize[1] / 2, radius);
-            gen_wheel((chassisSize[0] / 2 - radius * 1.25), chassisSize[1] / 2, radius);
-            gen_wheel(-(chassisSize[0] / 2 - radius * 1.25), -chassisSize[1] / 2, radius);
-            gen_wheel((chassisSize[0] / 2 - radius * 1.25), -chassisSize[1] / 2, radius);
+            gen_wheel(-(chassisSize[0] / 2 - wheelRadius * 1.25), chassisSize[1] / 2, wheelRadius);
+            gen_wheel((chassisSize[0] / 2 - wheelRadius * 1.25), chassisSize[1] / 2, wheelRadius);
+            gen_wheel(-(chassisSize[0] / 2 - wheelRadius * 1.25), -chassisSize[1] / 2, wheelRadius);
+            gen_wheel((chassisSize[0] / 2 - wheelRadius * 1.25), -chassisSize[1] / 2, wheelRadius);
 
             var renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.shadowMap.enabled = true;
@@ -102,36 +102,38 @@
             }
         }
 
-        init_visal({ containerId: 'formulaone', chassisSize: [8/4, 5/4, 2/4], radius: 1/4, chassisColor: 0xfec89a, wheelColor: 0xEED6C4 });
-        init_visal({ containerId: 'truck', chassisSize: [12/4 , 5 /4, 5/4], radius: 2.2/4, chassisColor: 0xfffff8, wheelColor: 0x000000 });
-        init_visal({ containerId: 'custom', chassisSize: [8/4, 5/4, 2/4], radius: 1/4, chassisColor: 0xC56183, wheelColor: 0x483434 });
+        // init_visal({ containerId: 'formulaone', chassisSize: [8 / 4, 5 / 4, 2 / 4], wheelRadius: 1 / 4, chassisColor: 0xfec89a, wheelColor: 0xEED6C4 });
+        // init_visal({ containerId: 'truck', chassisSize: [12 / 4, 5 / 4, 5 / 4], wheelRadius: 2.2 / 4, chassisColor: 0xfffff8, wheelColor: 0x000000 });
+        // init_visal({ containerId: 'custom', chassisSize: [8 / 4, 5 / 4, 2 / 4], wheelRadius: 1 / 4, chassisColor: 0xC56183, wheelColor: 0x483434 });
 
         window.init_visal = init_visal;
     </script>
 
     <script>
-        var customcar = {};
-        
+        var FormulaOneCar = { containerId: 'formulaone', chassisColor: 0xfec89a, wheelColor: 0xEED6C4, chassisSize: [2, 1.25, 0.5], wheelRadius: 0.25, mass: 500, maxForce: 8000 };
+        var Track = { containerId: 'truck', chassisColor: 0xfffff8, wheelColor: 0x000000, chassisSize: [3, 1.25, 1.25], wheelRadius: 2.2 / 4, mass: 2000, maxForce: 10000 };
+        var CustomCar = { containerId: 'custom', chassisSize: [2, 1.25, 0.5], wheelRadius: 0.25, chassisColor: 0xC56183, wheelColor: 0x483434, mass: 500, maxForce: 8000 };
+
         function sendrender() {
             const customButton = document.getElementById('custom-btn');
             var length = document.getElementById("length").value;
             var width = document.getElementById("width").value;
             var height = document.getElementById("height").value;
-            var radius = document.getElementById("radius").value;
+            var wheelRadius = document.getElementById("radius").value;
             var mass = document.getElementById("mass").value;
-            var force = document.getElementById("force").value;
-            console.log(length, width);
+            var maxForce = document.getElementById("force").value;
 
             if (length || height || width) {
-                length = parseFloat(length) || 0.5;
-                width = parseFloat(width) || 1.25;
-                height = parseFloat(height) || 0.5;
-                radius = parseFloat(radius) || 0.25;
-                mass = parseFloat(mass) ;
-                force = parseFloat(force) ;
+                let chassisSize = [];
+                chassisSize[0] = parseFloat(length) || CustomCar.chassisSize[0];
+                chassisSize[1] = parseFloat(width) || CustomCar.chassisSize[1];
+                chassisSize[2] = parseFloat(height) || CustomCar.chassisSize[2];
+                wheelRadius = parseFloat(wheelRadius) || CustomCar.wheelRadius;
+                mass = parseFloat(mass) || CustomCar.mass;
+                maxForce = parseFloat(maxForce) || CustomCar.maxForce;
 
-                init_visal({ containerId: 'custom', chassisSize: [length, width, height], radius, chassisColor: 0xC56183, wheelColor: 0x483434 });
-                customcar = { chassisColor: 0xC56183, wheelColor: 0x483434, chassisSize: [length, height, width], wheelRadius: radius, mass: mass, maxForce: force };
+                init_visal({ containerId: 'custom', chassisSize: chassisSize, wheelRadius, chassisColor: 0xC56183, wheelColor: 0x483434 });
+                CustomCar = { chassisColor: 0xC56183, wheelColor: 0x483434, chassisSize: chassisSize, wheelRadius, mass, maxForce };
                 customButton.disabled = false;
             }
         }
@@ -140,13 +142,18 @@
             // Clear Form
             document.getElementById('custom-form').reset();
 
-            var carDetail = { chassisColor, wheelColor, chassisSize, wheelRadius, mass, maxForce: maxForce / 4 };
-            console.log(carDetail);
+            var carInfo = { chassisColor, wheelColor, chassisSize: [chassisSize[0], chassisSize[2], chassisSize[1]], wheelRadius, mass, maxForce: maxForce / 4 };
+            console.log(carInfo);
 
-            localStorage.setItem('carDetail', JSON.stringify(carDetail));
+            localStorage.setItem('carInfo', JSON.stringify(carInfo));
             window.location.href = './simulator.html';
         }
 
+        function main() {
+            init_visal(FormulaOneCar);
+            init_visal(Track);
+            init_visal(CustomCar);
+        }
     </script>
 
     <!----------------- THREE JS -------------------->
@@ -161,45 +168,41 @@
     <div class="container" style="margin-top: 20px;">
         <div class="info">
             <h2 style="text-align: center;">FormulaOne</h2>
-            <p class="text">Chassis-Size : <br> L = 2 , W = 1.25 , H = 0.5</p>
+            <p class="text">Chassis-Size : <br> L = 2 , W = 1.25 , H = 0.5 m</p>
             <p class="text">Wheel-radius : 0.25 m</p>
             <p class="text">Mass : 500 kg</p>
             <p class="text">Engine-force : 8,000 N</p>
             <br>
             <div class="text-center">
-                <button
-                    onclick="saveAndExport({ chassisColor: 0xfec89a , wheelColor: 0xEED6C4, chassisSize:[2,0.5,1.25], wheelRadius: 0.25, mass: 500, maxForce: 8000 })"
-                    class="btselect">SELECT</button>
+                <button onclick="saveAndExport(FormulaOneCar)" class="btselect">SELECT</button>
             </div>
 
         </div>
 
         <div class="info">
             <h2 style="text-align: center;">Truck</h2>
-            <p class="text">Chassis-Size : <br> L = 3 , W = 1.25 , H = 1.25</p>
+            <p class="text">Chassis-Size : <br> L = 3 , W = 1.25 , H = 1.25 m</p>
             <p class="text">Wheel-radius : 0.55 m</p>
             <p class="text">Mass : 2,000 kg</p>
             <p class="text">Engine-force : 10,000 N</p>
             <br>
             <div class="text-center">
-                <button
-                    onclick="saveAndExport({ chassisColor: 0xfffff8 , wheelColor: 0x000000, chassisSize:[3,1.25,1.25], wheelRadius: 2.2/4, mass: 2000, maxForce: 10000 })"
-                    class="btselect">SELECT</button>
+                <button onclick="saveAndExport(Track)" class="btselect">SELECT</button>
             </div>
         </div>
 
         <div class="info">
             <h2 style="text-align: center;">( CUSTOM )</h2>
             <form onsubmit="sendrender()" onchange="sendrender()" class="custom-form" id="custom-form">
-                <input type="number" id="length" placeholder="Length"><br><br>
-                <input type="number" id="width" placeholder="Width"><br><br>
-                <input type="number" id="height" placeholder="Height"><br><br>
+                <input type="number" id="length" placeholder="Length (m)"><br><br>
+                <input type="number" id="width" placeholder="Width (m)"><br><br>
+                <input type="number" id="height" placeholder="Height (m)"><br><br>
                 <input type="number" id="radius" placeholder="Wheel-radius"><br><br>
                 <input type="number" id="mass" placeholder="Mass"><br><br>
                 <input type="number" id="force" placeholder="Engine-force"><br><br>
             </form>
             <div class="text-center">
-                <button id="custom-btn" disabled onclick="saveAndExport(customcar)" class="btselect">SELECT</button>
+                <button id="custom-btn" disabled onclick="saveAndExport(CustomCar)" class="btselect">SELECT</button>
             </div>
         </div>
 

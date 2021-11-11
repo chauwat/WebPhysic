@@ -294,11 +294,11 @@
         var enablePhysic = true;
         var vec_acc_type = 0;
         var cameraFollowObject = true;
-        var carDetail = {
+        var carInfo = {
             chassisColor: 0xfec89a,
             wheelColor: 0x000000,
             chassisSize: [4, 1, 2.5],
-            wheelRadius: 1,
+            wheelRadius: .6,
             mass: 500,
             maxForce: 2000,
             brakeForce: 200
@@ -339,10 +339,6 @@
             requestAnimationFrame(animate);
             if (controls) controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
             if (enablePhysic) updateVisuals();
-            render();
-        }
-
-        function render() {
             renderer.render(scene, camera);
             // labelRenderer.render(scene, camera);
         }
@@ -359,6 +355,9 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xbbdefb);
             // scene.fog = new THREE.FogExp2(0xcccccc, 0.001);
+            const axesHelper = new THREE.AxesHelper(1);
+            axesHelper.position.set(0, 5, 0);
+            scene.add(axesHelper);
         }
 
         function setRenderer() {
@@ -477,8 +476,8 @@
             addBox({ x: -10, y: 15, z: 30 }, { x: 20, y: 20, z: 20 }, 500, 0x33113a);
             addPyramid();
             buildRoad();
-            carDetail = { ...carDetail, ...loadCarDetail() };
-            createRayCast(carDetail);
+            carInfo = { ...carInfo, ...loadCarInfo() };
+            createRayCast(carInfo);
         }
 
         function setGUI() {
@@ -518,7 +517,7 @@
                 else
                     debugInfo.innerHTML += `${formatNumber(values)} ${unit[key]}<br>`;
             }
-            debugInfo.innerHTML += `Mass: ${carDetail.mass} KG, Engine-force: ${4 * carDetail.maxForce} N`;
+            debugInfo.innerHTML += `Mass: ${carInfo.mass} KG, Engine-force: ${4 * carInfo.maxForce} N`;
         }
 
         function loadDataPoints() {
@@ -541,10 +540,10 @@
             scene.add(box);
         }
 
-        function loadCarDetail() {
-            let _carDetail = localStorage.getItem('carDetail');
-            if (!_carDetail) return {};
-            return JSON.parse(_carDetail);
+        function loadCarInfo() {
+            let _carInfo = localStorage.getItem('carInfo');
+            if (!_carInfo) return {};
+            return JSON.parse(_carInfo);
         }
 
         // ====================================================================> World's Object
@@ -912,7 +911,7 @@
 
         // ===================================================================================> Car Control / Finish Line
 
-        function carHandler(maxForce = carDetail.maxForce, maxSteerVal = 0.6, brakeForce = carDetail.brakeForce) {
+        function carHandler(maxForce = carInfo.maxForce, maxSteerVal = 0.6, brakeForce = carInfo.brakeForce) {
             vehicle.setBrake(0, 0);
             vehicle.setBrake(0, 1);
             vehicle.setBrake(0, 2);
