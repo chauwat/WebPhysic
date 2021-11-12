@@ -245,6 +245,8 @@
         // const urlSearchParams = new URLSearchParams(window.location.search);
         // const params = Object.fromEntries(urlSearchParams.entries());
 
+        // ==================================================> Compute Function
+
         function printEuler(euler) {
             console.log((euler._x || euler.x) * 180 / Math.PI, (euler._y || euler.y) * 180 / Math.PI, (euler._z || euler.z) * 180 / Math.PI);
         }
@@ -259,6 +261,16 @@
             let { x, y, z } = Array.isArray(ret) ? { x: ret[0], y: ret[1], z: ret[2] } : ret;
             return Math.sqrt(x * x + y * y + z * z);
         }
+
+        function translateAxis({ x, y, z }, rad) {
+            let result = new THREE.Vector3(0, 0, 0);
+            result.x = x * Math.cos(rad.y) * Math.cos(rad.z) - z * Math.sin(rad.y) + y * Math.sin(rad.z);
+            result.y = y * Math.cos(rad.x) * Math.cos(rad.z) + z * Math.sin(rad.x) - x * Math.sin(rad.z);
+            result.z = z * Math.cos(rad.y) * Math.cos(rad.x) + x * Math.sin(rad.y) + y * Math.sin(rad.x);
+            return result;
+        }
+
+        // ==================================================> Import Library
 
         import * as THREE from './build/three.module.js';
         import { OrbitControls } from './jsm/controls/OrbitControls.js';
@@ -686,7 +698,7 @@
         }
 
         function addHitBox({ x, y, z } = { x: 0, y: 8, z: 1 }, rad = 0, length = 1, width = 1, debug = false) {
-            let size = { x: length, y: 1, z: width };
+            let size = { x: length, y: .2, z: width };
             var phyMaterial = new CANNON.Material();
             var phyShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.5, size.y * 0.5, size.z * 0.5));
             var phyBody = new CANNON.Body({
@@ -865,14 +877,19 @@
                 chassisMesh.position.copy(chassisBody.position);
                 chassisMesh.quaternion.copy(chassisBody.quaternion);
 
-                // let v = new CANNON.Vec3();
-                // let q = chassisBody.quaternion.toEuler(v);
 
                 if (chassisBody.acceleration) {
+                    let rad = new CANNON.Vec3();
+                    chassisBody.quaternion.toEuler(rad);
+                    let acceleration = translateAxis(chassisBody.acceleration, rad)
+
                     for (let i = 0; i < 3; i++) {
-                        Arrow[DIRECTION_KEY[i]].position.copy(chassisBody.position)
-                        // Arrow.[DIRECTION_KEY[i]].quaternion.copy(chassisBody.quaternion);
-                        setArrowSize(Arrow[DIRECTION_KEY[i]], chassisBody.acceleration[DIRECTION_KEY[i]], i);
+                        let position = new THREE.Vector3();
+                        position.copy(chassisBody.position);
+                        position.y = position.y + 5;
+                        Arrow[DIRECTION_KEY[i]].position.copy(position)
+                        Arrow[DIRECTION_KEY[i]].quaternion.copy(chassisBody.quaternion);
+                        setArrowSize(Arrow[DIRECTION_KEY[i]], acceleration[DIRECTION_KEY[i]], i);
                     }
                 }
 
