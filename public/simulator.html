@@ -574,6 +574,7 @@
                 quaternion: CANNON_deg2quat(-90, 0, 0)
             });
             groundBody.addShape(groundShape);
+            groundBody.position.y = -0.01;
             world.addBody(groundBody);
 
             // Visual
