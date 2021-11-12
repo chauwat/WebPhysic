@@ -266,7 +266,7 @@
             let result = new THREE.Vector3(0, 0, 0);
             result.x = x * Math.cos(rad.y) * Math.cos(rad.z) - z * Math.sin(rad.y) + y * Math.sin(rad.z);
             result.y = y * Math.cos(rad.x) * Math.cos(rad.z) + z * Math.sin(rad.x) - x * Math.sin(rad.z);
-            result.z = z * Math.cos(rad.y) * Math.cos(rad.x) + x * Math.sin(rad.y) + y * Math.sin(rad.x);
+            result.z = z * Math.cos(rad.y) * Math.cos(rad.x) + x * Math.sin(rad.y) - y * Math.sin(rad.x);
             return result;
         }
 
