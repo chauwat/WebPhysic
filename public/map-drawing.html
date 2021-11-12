@@ -128,8 +128,9 @@
 
         function addLine(x, y) {
             if ((Math.abs(x - prevPoint.x) + Math.abs(y - prevPoint.y)) <= 20) return;
-            if (basePoint.x && (x < basePoint.x || y > basePoint.y)) {
-                return;
+            if (basePoint.x) {
+                if (x < basePoint.x) x = basePoint.x;
+                if (y > basePoint.y) y = basePoint.y;
             }
 
             drawLine(mapPoint({ x, y }), !prevPoint.x);
