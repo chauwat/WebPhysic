@@ -246,7 +246,7 @@
         // const params = Object.fromEntries(urlSearchParams.entries());
 
         function printEuler(euler) {
-            console.log(euler._x * 180 / Math.PI, euler._y * 180 / Math.PI, euler._z * 180 / Math.PI);
+            console.log((euler._x || euler.x) * 180 / Math.PI, (euler._y || euler.y) * 180 / Math.PI, (euler._z || euler.z) * 180 / Math.PI);
         }
 
         function CANNON_deg2quat(...deg) {
@@ -266,6 +266,8 @@
         import { GUI } from './jsm/libs/dat.gui.module.js';
         // import { CSS2DRenderer, CSS2DObject } from './jsm/renderers/CSS2DRenderer.js';
         const loader = new GLTFLoader();
+
+        // ==================================================> Variable
 
         var debugInfo;
 
@@ -288,6 +290,8 @@
         var bodies = [], meshes = [];
         var syncs = [];
         var cameraView = 0;
+
+        const DIRECTION_KEY = ['x', 'y', 'z'];
 
         // ======================================================> GamePlay Global Variable
 
@@ -355,7 +359,7 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xbbdefb);
             // scene.fog = new THREE.FogExp2(0xcccccc, 0.001);
-            const axesHelper = new THREE.AxesHelper(1);
+            const axesHelper = new THREE.AxesHelper(10);
             axesHelper.position.set(0, 5, 0);
             scene.add(axesHelper);
         }
@@ -495,9 +499,9 @@
         }
 
         function formatNumber(_v, size = 4) {
-            let absV = Math.abs(_v).toFixed(2);
+            let absV = Math.abs(_v).toFixed(3);
             // console.log(absV, absV.length - 3 > size);
-            let r = `0000${absV}`.substr(absV.length - size + 1);
+            let r = `0000${absV}`.substr(absV.length - size);
             if (_v >= 0) r = `+${r}`;
             else r = `-${r}`;
             return r;
@@ -711,6 +715,43 @@
             return sphere;
         }
 
+        function genVisualArrow(length = 0, color = 0xff0000, direction = 0) {
+            let position = [0, 0, 0];
+            let rotation = [0, 0, 0];
+            const ROTATION_INDEX = { 0: 2, 2: 0 }; // Shoud be update soon.
+            const group = new THREE.Group();
+            let geometry = new THREE.CylinderGeometry(.1, .1, length);
+            let material = new THREE.MeshBasicMaterial({ color, wireframe: false });
+            let mesh = new THREE.Mesh(geometry, material);
+            position[direction] = length / 2;
+            mesh.position.set(...position);
+            rotation[ROTATION_INDEX[direction]] = - Math.PI / 2;
+            mesh.quaternion.setFromEuler(new THREE.Euler(...rotation));
+            group.add(mesh);
+
+            geometry = new THREE.SphereGeometry(.2);
+            mesh = new THREE.Mesh(geometry, material);
+            position[direction] = length;
+            mesh.position.set(...position);
+            mesh.quaternion.setFromEuler(new THREE.Euler(...rotation));
+            group.add(mesh);
+            return group;
+        }
+
+        function setArrowSize(arrow, length, direction = 0) {
+            let position = [0, 0, 0];
+            let lengthRatio = 1 / 2;
+            length = length * lengthRatio;
+            let tailMesh = arrow.children[0];
+            let headMesh = arrow.children[1];
+            let scaleFactor = length / tailMesh.geometry.parameters.height;
+            tailMesh.scale.set(1, scaleFactor, 1);
+            position[direction] = length / 2;
+            tailMesh.position.set(...position);
+            position[direction] = length;
+            headMesh.position.set(...position);
+        }
+
         function create3DShape(points, width = 20, depth = 2, color = 0x727272, debug = setting.debug) {
             function calcLength(posA, posB) {
                 return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
@@ -767,10 +808,8 @@
             scene.add(group);
         }
 
-        var preVelocity = [0, 0, 0];
-        var preTimestamp = new Date();
         function createRayCast({ chassisColor, wheelColor, mass, chassisSize, wheelRadius }) {
-            const carPosition = [20, 20, 0];
+            const carPosition = [10, 20, 0];
             // const chassisSize = [8, 2, 5];
             // const wheelRadius = 1;
             var options = {
@@ -814,30 +853,30 @@
             chassisMesh.receiveShadow = true;
             scene.add(chassisMesh);
 
-            syncs.push(() => {
-                let dt = (new Date() - preTimestamp) / 1000;
-                // Display Car's Physic Info
-                if (dt > .05) {
-                    let absVelocity = calc3D2Abs(chassisBody.velocity);
-                    let acceleration = [];
-                    for (let i = 0; i < 3; i++) acceleration[i] = (chassisBody.velocity.toArray()[i] - preVelocity[i]) / dt;
-                    if (vec_acc_type) {
-                        displayPhysicInfo({ position: chassisBody.position.toArray(), velocity: chassisBody.velocity.toArray(), acceleration });
-                    } else {
-                        displayPhysicInfo({ position: chassisBody.position.toArray(), absVelocity, absAcceleration: calc3D2Abs(acceleration) });
-                    }
-                    preTimestamp = new Date();
-                    preVelocity = chassisBody.velocity.toArray();
-                }
+            let Arrow = {};
+            Arrow.x = genVisualArrow(2, 0xff0000, 0);
+            Arrow.y = genVisualArrow(2, 0x00ff00, 1);
+            Arrow.z = genVisualArrow(2, 0x0000ff, 2);
+            scene.add(Arrow.x);
+            scene.add(Arrow.y);
+            scene.add(Arrow.z);
 
-                // Lock Camera's View
-                if (cameraView == 0) {
-                    let delta = new THREE.Vector3(chassisBody.position.x - chassisMesh.position.x, chassisBody.position.y - chassisMesh.position.y, chassisBody.position.z - chassisMesh.position.z);
-                    cameraTracking(delta, chassisBody.position);
-                }
+            syncs.push(() => {
                 chassisMesh.position.copy(chassisBody.position);
                 chassisMesh.quaternion.copy(chassisBody.quaternion);
-                monitorCarPosition(chassisBody.position);
+
+                // let v = new CANNON.Vec3();
+                // let q = chassisBody.quaternion.toEuler(v);
+
+                if (chassisBody.acceleration) {
+                    for (let i = 0; i < 3; i++) {
+                        Arrow[DIRECTION_KEY[i]].position.copy(chassisBody.position)
+                        // Arrow.[DIRECTION_KEY[i]].quaternion.copy(chassisBody.quaternion);
+                        setArrowSize(Arrow[DIRECTION_KEY[i]], chassisBody.acceleration[DIRECTION_KEY[i]], i);
+                    }
+                }
+
+                monitorCarLocation(chassisBody);
             });
 
             // CREATE THE VEHICLE
@@ -948,9 +987,33 @@
 
         syncs.push(carHandler);
 
-        function monitorCarPosition(position) {
+        var preTimestamp = new Date();
+        function monitorCarLocation(chassisBody) {
+            if (!chassisBody.previousVelocity) chassisBody.previousVelocity = new CANNON.Vec3();
+            if (!chassisBody.acceleration) chassisBody.acceleration = new CANNON.Vec3();
+            let dt = (new Date() - preTimestamp) / 1000;
+
+            // Display Car's Physic Info
+            if (dt > .05) {
+                let absVelocity = calc3D2Abs(chassisBody.velocity);
+                chassisBody.velocity.vsub(chassisBody.previousVelocity, chassisBody.acceleration);
+                chassisBody.acceleration.scale(1 / dt, chassisBody.acceleration);
+                if (vec_acc_type) displayPhysicInfo({ position: chassisBody.position.toArray(), velocity: chassisBody.velocity.toArray(), acceleration: chassisBody.acceleration.toArray() });
+                else displayPhysicInfo({ position: chassisBody.position.toArray(), absVelocity, absAcceleration: calc3D2Abs(chassisBody.acceleration) });
+                chassisBody.previousVelocity.copy(chassisBody.velocity)
+                preTimestamp = new Date();
+            }
+
+            // Lock Camera's View
+            if (cameraView == 0) {
+                let delta = new THREE.Vector3(chassisBody.position.x - chassisBody.previousPosition.x, chassisBody.position.y - chassisBody.previousPosition.y, chassisBody.position.z - chassisBody.previousPosition.z);
+                chassisBody.previousPosition.copy(chassisBody.position);
+                cameraTracking(delta, chassisBody.position);
+            }
+
+            // Finish Line Checker
             let diff = {};
-            for (let key of ['x', 'y', 'z']) diff[key] = position[key] - finishLine.position[key];
+            for (let key of ['x', 'y', 'z']) diff[key] = chassisBody.position[key] - finishLine.position[key];
             if (Math.abs(diff.x) + Math.abs(diff.y) < finishLine.radius && !finishLine.isPassed) {
                 finishLine.isPassed = true;
                 cameraFollowObject = false;
