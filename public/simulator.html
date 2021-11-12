@@ -19,7 +19,7 @@
             font-family: "Mitr", sans-serif;
         }
 
-        #physic-info {
+        #physic-info-label {
             color: #ffffff;
             background: rgba(0, 0, 0, .3);
             position: absolute;
@@ -37,13 +37,11 @@
             background: rgba(0, 0, 0, .6);
         }
 
-        .menu {
+        .menu-btn {
             position: absolute;
             top: 16px;
             left: 16px;
-        }
 
-        .menu-btn {
             padding: 6px 12px;
             font-size: 16px;
             background: rgba(0, 0, 0, 0);
@@ -105,11 +103,9 @@
 </head>
 
 <body>
-    <div class="menu">
-        <button class="menu-btn" onclick="toggleMenu()">
-            <i class="fa fa-bars"></i>
-        </button>
-    </div>
+    <button class="menu menu-btn" onclick="toggleMenu()">
+        <i class="fa fa-bars"></i>
+    </button>
 
     <!-- Game Menu -->
     <div class="menu-container abs-center text-center" id="menu-container">
@@ -119,7 +115,7 @@
 
         <section>
             <h2>Menu</h2>
-            <button class="btn btn-sm btn-outline-light" onclick="location.reload()">Restart Game</button>
+            <button class="btn btn-sm btn-outline-light" onclick="restartWorld()">Restart Game</button>
             <a href="/map-drawing.html" class="btn btn-sm btn-outline-light">Go to Map-Drawing</a>
             <a href="/select.html" class="btn btn-sm btn-outline-light">Choose My Car</a>
         </section>
@@ -132,37 +128,42 @@
                 <input type="checkbox" id="checkbox-camFollow" value="true" checked>
             </div> -->
             <div class="d-flex">
-                <label class="text-nowrap">Camera FOV : </label>
+                <label class="text-nowrap">Camera FOV (<span id="fov-label">60</span>) : </label>
                 <span class="mx-2">30</span>
                 <input style="width: 100%;" type="range" min="30" max="120" value="60"
-                    oninput="updateCameraFov(this.value)">
+                    oninput="updateCameraFov(this.value)" id="fov-slider">
                 <span class="ms-2">120</span>
             </div>
             <div class="d-flex">
-                <label class="text-nowrap">World Gravity : </label>
+                <label class="text-nowrap">World Gravity (<span id="gravity-label">9.81</span>) : </label>
                 <span class="mx-2">0</span>
-                <input style="width: 100%;" type="range" min="0" max="30" value="9.81"
-                    oninput="updateWorldGravity(this.value)">
-                <span class="ms-2">30</span>
+                <input style="width: 100%;" type="range" min="0" max="30" value="9.81" step="0.1"
+                    oninput="updateWorldGravity(this.value)" id="gravity-slider">
+                <span class="ms-2 text-nowrap">30 m/s<sup>2</sup></span>
+            </div>
+            <div class="d-flex align-items-center mt-2">
+                <label class="text-nowrap">Show / Hide Physic Info : </label>
+                <button class="btn btn-sm btn-outline-light ms-2" onclick="_setDisplayPhysicInfo()">Toggle</button>
             </div>
         </section>
 
         <section class="mt-4">
             <h4>Advance Setting</h4>
             <div class="d-flex align-items-center mt-2">
-                <label class="text-nowrap">Show / Hide Physic Info : </label>
-                <button class="btn btn-sm btn-outline-light ms-2" onclick="setDisplayPhysicInfo()">Toggle</button>
-            </div>
-
-            <div class="d-flex align-items-center mt-2">
                 <label class="text-nowrap">Velocity, Acceleration Display Mode : </label>
-                <button class="btn btn-sm btn-outline-light ms-2"
+                <button class="btn btn-sm btn-outline-light ms-2" id="vcc-acc-mode-button"
                     onclick="toggleVecAccDisplayMode(this)">Scalar</button>
             </div>
 
             <div class="d-flex align-items-center mt-2">
                 <label class="text-nowrap">Show / Hide Hitbox Debug : </label>
-                <button class="btn btn-sm btn-outline-light ms-2" onclick="toggleDebug()">Toggle</button>
+                <button class="btn btn-sm btn-outline-light ms-2" onclick="toggleHitBoxDebug()">Toggle</button>
+                <span class="ms-2 fst-italic">(This will reload the page)</span>
+            </div>
+
+            <div class="d-flex align-items-center mt-2">
+                <label class="text-nowrap">Reset to default setting : </label>
+                <button class="btn btn-sm btn-outline-danger ms-2" onclick="resetSetting()">Reset</button>
                 <span class="ms-2 fst-italic">(This will reload the page)</span>
             </div>
         </section>
@@ -185,9 +186,20 @@
                     aria-label="Slide 3"></button>
                 <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="3"
                     aria-label="Slide 4"></button>
+                <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="4"
+                    aria-label="Slide 5"></button>
             </div>
             <div class="carousel-inner">
                 <div class="carousel-item active">
+                    <div class="d-block w-100 bg-dark" style="max-height: 660px; height: 38vw;">
+                        <h2 class="abs-center">Win!! Thanks for playing.</h2>
+                    </div>
+                    <div class="carousel-caption d-none d-md-block">
+                        <p>Learn more about physics in this game in the following slide</p>
+                        <a href="./" class="btn btn-sm btn-outline-light mb-2">or Back to Main Screen</a>
+                    </div>
+                </div>
+                <div class="carousel-item">
                     <img src="./img/static.jpg" class="d-block w-100">
                     <div class="carousel-caption d-none d-md-block">
                         <h5>Static</h5>
@@ -234,7 +246,7 @@
         SpaceBar to Lock / Unlock Camera
     </div>
 
-    <div id="physic-info"></div>
+    <div id="physic-info-label"></div>
 
     <!-- ================================================================================================================= JavaScript -->
 
@@ -260,6 +272,15 @@
         function calc3D2Abs(ret) {
             let { x, y, z } = Array.isArray(ret) ? { x: ret[0], y: ret[1], z: ret[2] } : ret;
             return Math.sqrt(x * x + y * y + z * z);
+        }
+
+        function formatNumber(_v, size = 4) {
+            let absV = Math.abs(_v).toFixed(3);
+            // console.log(absV, absV.length - 3 > size);
+            let r = `0000${absV}`.substr(absV.length - size);
+            if (_v >= 0) r = `+${r}`;
+            else r = `-${r}`;
+            return r;
         }
 
         function translateAxis({ x, y, z }, rad) {
@@ -308,7 +329,6 @@
         // ======================================================> GamePlay Global Variable
 
         var enablePhysic = true;
-        var vec_acc_type = 0;
         var cameraFollowObject = true;
         var carInfo = {
             chassisColor: 0xfec89a,
@@ -322,21 +342,24 @@
         var finishLine = { position: [], radius: 10, isPassed: false };
 
         // Changable In Setting
-        var worldGravity = 9.81;
-        var cameraFov = 60;
-        var setting = {
-            debug: false,
+        const defaultSetting = {
+            worldGravity: 9.81,
+            cameraFov: 60,
+            hitBoxDebug: false,
+            vec_acc_type: 0,
+            displayPhysicInfo: true
         }
+        var setting = { ...defaultSetting };
 
         // ======================================================
 
 
+        loadSetting();
         initPhysic();
         init();
         animate();
 
         function init() {
-            loadSetting();
             setScene();
             setRenderer();
             setCamera();
@@ -348,7 +371,7 @@
 
         function initPhysic() {
             world = new CANNON.World();
-            world.gravity.set(0, -worldGravity, 0);
+            world.gravity.set(0, -setting.worldGravity, 0);
         }
 
         function animate() {
@@ -371,7 +394,7 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xbbdefb);
             // scene.fog = new THREE.FogExp2(0xcccccc, 0.001);
-            const axesHelper = new THREE.AxesHelper(10);
+            const axesHelper = new THREE.AxesHelper(5);
             axesHelper.position.set(0, 5, 0);
             scene.add(axesHelper);
         }
@@ -397,7 +420,7 @@
         }
 
         function setCamera() {
-            camera = new THREE.PerspectiveCamera(cameraFov, window.innerWidth / window.innerHeight, 1, 1000);
+            camera = new THREE.PerspectiveCamera(setting.cameraFov, window.innerWidth / window.innerHeight, 1, 1000);
             camera.position.set(-10, 8, 8);
             // camera.up.set(0, 0, 1);
             scene.add(camera);
@@ -479,7 +502,17 @@
         function loadSetting() {
             let _setting = localStorage.getItem('setting');
             if (!_setting) return [];
-            setting = JSON.parse(_setting);
+            setting = { ...defaultSetting, ...JSON.parse(_setting) };
+            updateGUISetting(setting);
+        }
+
+        function saveSetting() {
+            localStorage.setItem('setting', JSON.stringify(setting));
+        }
+
+        function loadDefaultSetting() {
+            setting = defaultSetting;
+            saveSetting();
         }
 
         function setWorld() {
@@ -502,7 +535,7 @@
             // const matChanger = (value) => { enablePhysic = config.enablePhysic; };
             // gui.add(config, 'enablePhysic', false).onChange(matChanger);
 
-            debugInfo = document.getElementById('physic-info');
+            debugInfo = document.getElementById('physic-info-label');
         }
 
         function cameraTracking(delta, pos) {
@@ -510,21 +543,12 @@
             controls.target.copy(pos);
         }
 
-        function formatNumber(_v, size = 4) {
-            let absV = Math.abs(_v).toFixed(3);
-            // console.log(absV, absV.length - 3 > size);
-            let r = `0000${absV}`.substr(absV.length - size);
-            if (_v >= 0) r = `+${r}`;
-            else r = `-${r}`;
-            return r;
-        }
-
         function displayPhysicInfo(info) {
             const unit = { position: 'm', absVelocity: 'm/s', absAcceleration: 'm/s<sup>2</sup>', velocity: 'm/s', acceleration: 'm/s<sup>2</sup>' };
             const label = { position: 'Position', absVelocity: '|Velocity|', absAcceleration: '|Acceleration|', velocity: 'Velocity', acceleration: 'Acceleration' };
 
             debugInfo.innerHTML = ``;
-            if (actions.carBrake) debugInfo.innerHTML += `[Brake Force Applied]<br>`;
+            if (actions.carBrake) debugInfo.innerHTML += `[Brake Applied]<br>`;
             for (let key in info) {
                 let values = info[key] || 0;
                 debugInfo.innerHTML += `${label[key]}: `
@@ -552,8 +576,8 @@
 
             // Add Finish Box
             finishLine.position = { ...finishLine.position, y: finishLine.position.y + finishLine.radius / 2, z: 0 }
-            let box = createDebugSphere(Object.values(finishLine.position), 0xccccff, finishLine.radius);
-            scene.add(box);
+            let finishShpere = createDebugSphere(Object.values(finishLine.position), 0xccccff, finishLine.radius);
+            scene.add(finishShpere);
         }
 
         function loadCarInfo() {
@@ -586,10 +610,10 @@
             ground_mesh.receiveShadow = true;
             scene.add(ground_mesh);
 
-            syncs.push(() => {
-                ground_mesh.position.copy(groundBody.position);
-                ground_mesh.quaternion.copy(groundBody.quaternion);
-            });
+            // syncs.push(() => {
+            ground_mesh.position.copy(groundBody.position);
+            ground_mesh.quaternion.copy(groundBody.quaternion);
+            // });
         }
 
         function addPyramid({ x, y, z } = { x: -20, y: 5, z: 0 }) {
@@ -670,26 +694,25 @@
                     let delta = new THREE.Vector3(phyBody.position.x - mesh.position.x, phyBody.position.y - mesh.position.y, phyBody.position.z - mesh.position.z);
                     cameraTracking(delta, phyBody.position);
                 }
-
                 mesh.position.copy(phyBody.position);
                 mesh.quaternion.copy(phyBody.quaternion);
-                const centerInWorldCoords = phyBody.pointToWorldFrame(new CANNON.Vec3());
-                if (actions.ballForward) {
-                    phyBody.applyForce(new CANNON.Vec3(100, 0, 0), centerInWorldCoords);
-                } else if (actions.ballBackward) {
-                    phyBody.applyForce(new CANNON.Vec3(-100, 0, 0), centerInWorldCoords);
-                }
-                if (actions.ballLeft) {
-                    phyBody.applyForce(new CANNON.Vec3(0, 0, -100), centerInWorldCoords);
-                } else if (actions.ballRight) {
-                    phyBody.applyForce(new CANNON.Vec3(0, 0, 100), centerInWorldCoords);
-                }
+                // const centerInWorldCoords = phyBody.pointToWorldFrame(new CANNON.Vec3());
+                // if (actions.ballForward) {
+                //     phyBody.applyForce(new CANNON.Vec3(100, 0, 0), centerInWorldCoords);
+                // } else if (actions.ballBackward) {
+                //     phyBody.applyForce(new CANNON.Vec3(-100, 0, 0), centerInWorldCoords);
+                // }
+                // if (actions.ballLeft) {
+                //     phyBody.applyForce(new CANNON.Vec3(0, 0, -100), centerInWorldCoords);
+                // } else if (actions.ballRight) {
+                //     phyBody.applyForce(new CANNON.Vec3(0, 0, 100), centerInWorldCoords);
+                // }
             });
         }
 
         function genVisualBoxMesh(pos, size, rad = 0, color = 0xcccccc, debug = false) {
             let geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-            const material = new THREE.MeshPhongMaterial({ color, flatShading: true, wireframe: debug });
+            const material = new THREE.MeshPhongMaterial({ color, flatShading: false, wireframe: debug });
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(pos.x, pos.y, pos.z);
             mesh.rotation.z = rad;
@@ -699,7 +722,7 @@
         }
 
         function addHitBox({ x, y, z } = { x: 0, y: 8, z: 1 }, rad = 0, length = 1, width = 1, debug = false) {
-            let size = { x: length, y: .2, z: width };
+            let size = { x: length, y: .1, z: width };
             var phyMaterial = new CANNON.Material();
             var phyShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.5, size.y * 0.5, size.z * 0.5));
             var phyBody = new CANNON.Body({
@@ -713,9 +736,11 @@
 
             if (debug) {
                 let mesh = genVisualBoxMesh({ x, y, z }, size, 0, 0xffffff, true);
+                scene.add(mesh);
+                // syncs.push(() => {
                 mesh.position.copy(phyBody.position);
                 mesh.quaternion.copy(phyBody.quaternion);
-                scene.add(mesh);
+                // })
             }
         }
 
@@ -751,21 +776,7 @@
             return group;
         }
 
-        function setArrowSize(arrow, length, direction = 0) {
-            let position = [0, 0, 0];
-            let lengthRatio = 1 / 2;
-            length = length * lengthRatio;
-            let tailMesh = arrow.children[0];
-            let headMesh = arrow.children[1];
-            let scaleFactor = length / tailMesh.geometry.parameters.height;
-            tailMesh.scale.set(1, scaleFactor, 1);
-            position[direction] = length / 2;
-            tailMesh.position.set(...position);
-            position[direction] = length;
-            headMesh.position.set(...position);
-        }
-
-        function create3DShape(points, width = 20, depth = 2, color = 0x727272, debug = setting.debug) {
+        function create3DShape(points, width = 20, depth = 2, color = 0x727272, debug = setting.hitBoxDebug) {
             function calcLength(posA, posB) {
                 return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
             }
@@ -823,8 +834,6 @@
 
         function createRayCast({ chassisColor, wheelColor, mass, chassisSize, wheelRadius }) {
             const carPosition = [10, 20, 0];
-            // const chassisSize = [8, 2, 5];
-            // const wheelRadius = 1;
             var options = {
                 radius: wheelRadius,
                 directionLocal: new CANNON.Vec3(0, -1, 0),
@@ -866,6 +875,7 @@
             chassisMesh.receiveShadow = true;
             scene.add(chassisMesh);
 
+            // CREATE ACCELERATION ARROW
             let Arrow = {};
             Arrow.x = genVisualArrow(2, 0xff0000, 0);
             Arrow.y = genVisualArrow(2, 0x00ff00, 1);
@@ -877,24 +887,9 @@
             syncs.push(() => {
                 chassisMesh.position.copy(chassisBody.position);
                 chassisMesh.quaternion.copy(chassisBody.quaternion);
-
-
-                if (chassisBody.acceleration) {
-                    let rad = new CANNON.Vec3();
-                    chassisBody.quaternion.toEuler(rad);
-                    let acceleration = translateAxis(chassisBody.acceleration, rad)
-
-                    for (let i = 0; i < 3; i++) {
-                        let position = new THREE.Vector3();
-                        position.copy(chassisBody.position);
-                        position.y = position.y + 5;
-                        Arrow[DIRECTION_KEY[i]].position.copy(position)
-                        Arrow[DIRECTION_KEY[i]].quaternion.copy(chassisBody.quaternion);
-                        setArrowSize(Arrow[DIRECTION_KEY[i]], acceleration[DIRECTION_KEY[i]], i);
-                    }
-                }
-
+                calcBodyAcceleration(chassisBody);
                 monitorCarLocation(chassisBody);
+                updateArrow(chassisBody, Arrow)
             });
 
             // CREATE THE VEHICLE
@@ -966,7 +961,7 @@
             })
         }
 
-        // ===================================================================================> Car Control / Finish Line
+        // ===================================================================================> Mesh Control / Finish Line
 
         function carHandler(maxForce = carInfo.maxForce, maxSteerVal = 0.6, brakeForce = carInfo.brakeForce) {
             vehicle.setBrake(0, 0);
@@ -1005,6 +1000,14 @@
 
         syncs.push(carHandler);
 
+        function calcBodyAcceleration(Body) {
+            if (!Body.previousVelocity) Body.previousVelocity = new CANNON.Vec3();
+            if (!Body.acceleration) Body.acceleration = new CANNON.Vec3();
+            Body.velocity.vsub(Body.previousVelocity, Body.acceleration);
+            Body.acceleration.scale(1 / world.dt, Body.acceleration);
+            Body.previousVelocity.copy(Body.velocity)
+        }
+
         var preTimestamp = new Date();
         function monitorCarLocation(chassisBody) {
             if (!chassisBody.previousVelocity) chassisBody.previousVelocity = new CANNON.Vec3();
@@ -1013,12 +1016,8 @@
 
             // Display Car's Physic Info
             if (dt > .05) {
-                let absVelocity = calc3D2Abs(chassisBody.velocity);
-                chassisBody.velocity.vsub(chassisBody.previousVelocity, chassisBody.acceleration);
-                chassisBody.acceleration.scale(1 / dt, chassisBody.acceleration);
-                if (vec_acc_type) displayPhysicInfo({ position: chassisBody.position.toArray(), velocity: chassisBody.velocity.toArray(), acceleration: chassisBody.acceleration.toArray() });
-                else displayPhysicInfo({ position: chassisBody.position.toArray(), absVelocity, absAcceleration: calc3D2Abs(chassisBody.acceleration) });
-                chassisBody.previousVelocity.copy(chassisBody.velocity)
+                if (setting.vec_acc_type) displayPhysicInfo({ position: chassisBody.position.toArray(), velocity: chassisBody.velocity.toArray(), acceleration: chassisBody.acceleration.toArray() });
+                else displayPhysicInfo({ position: chassisBody.position.toArray(), absVelocity: calc3D2Abs(chassisBody.velocity), absAcceleration: calc3D2Abs(chassisBody.acceleration) });
                 preTimestamp = new Date();
             }
 
@@ -1031,7 +1030,7 @@
 
             // Finish Line Checker
             let diff = {};
-            for (let key of ['x', 'y', 'z']) diff[key] = chassisBody.position[key] - finishLine.position[key];
+            for (let key of DIRECTION_KEY) diff[key] = chassisBody.position[key] - finishLine.position[key];
             if (Math.abs(diff.x) + Math.abs(diff.y) < finishLine.radius && !finishLine.isPassed) {
                 finishLine.isPassed = true;
                 cameraFollowObject = false;
@@ -1041,37 +1040,91 @@
             }
         }
 
+        function setArrowSize(arrow, length, direction = 0) {
+            let position = [0, 0, 0];
+            let lengthRatio = 1 / 2;
+            length = length * lengthRatio;
+            let tailMesh = arrow.children[0];
+            let headMesh = arrow.children[1];
+            let scaleFactor = length / tailMesh.geometry.parameters.height;
+            tailMesh.scale.set(1, scaleFactor, 1);
+            position[direction] = length / 2;
+            tailMesh.position.set(...position);
+            position[direction] = length;
+            headMesh.position.set(...position);
+        }
+
+        function updateArrow(Body, Arrow) {
+            if (!Body.acceleration) return;
+            let rad = new CANNON.Vec3();
+            Body.quaternion.toEuler(rad);
+            let acceleration = translateAxis(Body.acceleration, rad)
+            let position = new THREE.Vector3();
+            position.copy(Body.position);
+            position.y = position.y + carInfo.chassisSize[1] / 2 + 1;
+            for (let i = 0; i < 3; i++) {
+                Arrow[DIRECTION_KEY[i]].position.copy(position)
+                Arrow[DIRECTION_KEY[i]].quaternion.copy(Body.quaternion);
+                setArrowSize(Arrow[DIRECTION_KEY[i]], acceleration[DIRECTION_KEY[i]], i);
+            }
+        }
+
         // ===================================================================================> Export (Public) Function
 
-        window.setPhysic = function (on) {
+        window._setPhysic = function (on) {
             enablePhysic = on;
         }
 
-        window.setDisplayPhysicInfo = function (show = debugInfo.style.display) {
+        window._setDisplayPhysicInfo = function (show = !setting.displayPhysicInfo) {
             debugInfo.style.display = show ? null : 'none';
+            setting.displayPhysicInfo = show;
+            saveSetting();
             return show;
         }
 
-        window.setVecAccDisplayMode = function (mode = vec_acc_type + 1) {
+        window._setVecAccDisplayMode = function (mode = setting.vec_acc_type + 1) {
             const max_type = 1;
             if (mode > max_type) mode = 0;
-            return vec_acc_type = mode;
+            setting.vec_acc_type = mode;
+            saveSetting();
+            return mode;
         }
 
-        window.updateCameraFov = function (fov) {
+        window._updateCameraFov = function (fov) {
             camera.fov = fov;
             camera.updateProjectionMatrix();
+            setting.cameraFov = fov;
+            saveSetting();
         }
 
-        window.updateWorldGravity = function (g) {
-            worldGravity = g;
-            world.gravity.set(0, -worldGravity, 0)
+        window._updateWorldGravity = function (g) {
+            world.gravity.set(0, -g, 0)
+            setting.worldGravity = g;
+            saveSetting();
         }
 
-        window.toggleDebug = function () {
-            setting.debug = !setting.debug;
-            localStorage.setItem('setting', JSON.stringify(setting));
-            location.reload();
+        window._getSetting = function () {
+            return setting;
+        }
+
+        window._toggleHitBoxDebug = function () {
+            setting.hitBoxDebug = !setting.hitBoxDebug;
+            saveSetting();
+        }
+
+        window._loadDefaultSetting = loadDefaultSetting;
+
+        window._restartWorld = function () {
+            let bodies = world.bodies;
+            for (let i = 0; i < bodies.length; i++) {
+                var b = bodies[i];
+                b.position.copy(b.initPosition);
+                b.velocity.copy(b.initVelocity);
+                if (b.initAngularVelocity) {
+                    b.angularVelocity.copy(b.initAngularVelocity);
+                    b.quaternion.copy(b.initQuaternion);
+                }
+            }
         }
     </script>
 
@@ -1081,13 +1134,52 @@
 
         function toggleMenu() {
             menuContainer.style.display = menuContainer.style.display ? null : 'block';
-            setPhysic(!menuContainer.style.display);
+            _setPhysic(!menuContainer.style.display);
         }
 
         function toggleVecAccDisplayMode(e) {
-            let mode = setVecAccDisplayMode();
+            let mode = _setVecAccDisplayMode();
             e.innerHTML = `${mode ? 'Vector' : 'Scalar'}`;
         }
+
+        function restartWorld() {
+            _restartWorld();
+            toggleMenu();
+            updateGUISetting(_getSetting());
+        }
+
+        function resetSetting() {
+            _loadDefaultSetting();
+            location.reload();
+        }
+
+        function toggleHitBoxDebug() {
+            _toggleHitBoxDebug();
+            location.reload();
+        }
+
+        function updateCameraFov(fov) {
+            _updateCameraFov(parseInt(fov));
+            document.getElementById('fov-label').innerHTML = fov;
+        }
+
+        function updateWorldGravity(g) {
+            _updateWorldGravity(parseFloat(g));
+            document.getElementById('gravity-label').innerHTML = g;
+        }
+
+        // Call when loadSetting
+        function updateGUISetting(setting) {
+            let { worldGravity, cameraFov, vec_acc_type, displayPhysicInfo } = setting;
+            document.getElementById('fov-label').innerHTML = cameraFov;
+            document.getElementById('fov-slider').value = cameraFov;
+            document.getElementById('gravity-label').innerHTML = worldGravity;
+            document.getElementById('gravity-slider').value = worldGravity;
+            document.getElementById('vcc-acc-mode-button').innerHTML = `${vec_acc_type ? 'Vector' : 'Scalar'}`;
+            document.getElementById('physic-info-label').style.display = displayPhysicInfo ? null : 'none';
+        }
+
+        // ===============================================> HTML KEY LISTENER
 
         window.addEventListener('keydown', (e) => {
             if (e.code == 'Escape') {
